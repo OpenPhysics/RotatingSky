@@ -1,0 +1,58 @@
+{
+  "title": "Cielo Giratorio",
+  "screens": {
+    "horizonSystem": "Sistema del Horizonte",
+    "celestialSphere": "Esfera Celeste",
+    "explorer": "Explorador"
+  },
+  "controls": {
+    "latitude": "Latitud",
+    "addStar": "Agregar estrella",
+    "addStarRandomly": "Agregar estrella al azar",
+    "resetStarTrails": "Reiniciar trazas",
+    "starTrails": "Trazas de estrellas",
+    "removeAllStars": "Eliminar todas las estrellas",
+    "showBands": "Mostrar bandas",
+    "showCelestialEquator": "Ecuador celeste",
+    "showEcliptic": "Eclíptica",
+    "viewSystem": "Vista",
+    "celestialSphereView": "Esfera celeste",
+    "horizonView": "Horizonte",
+    "star": "Estrella",
+    "selectedStar": "Estrella seleccionada",
+    "rightAscension": "AR",
+    "declination": "Dec",
+    "noStarSelected": "Ninguna estrella seleccionada"
+  },
+  "a11y": {
+    "horizonSystem": {
+      "screenSummary": {
+        "playArea": "El área de juego muestra el cielo local desde el horizonte de un observador, con los puntos cardinales y el Sol y las estrellas saliendo y poniéndose a medida que el cielo gira.",
+        "controlArea": "El área de control tiene un botón Restablecer todo que devuelve la simulación a su estado inicial.",
+        "interactionHint": "Explora cómo se ve el cielo desde tu ubicación sobre el horizonte."
+      },
+      "currentDetails": "La vista del horizonte está en su estado inicial."
+    },
+    "celestialSphere": {
+      "screenSummary": {
+        "playArea": "El área de juego muestra la esfera celeste con el ecuador celeste, la eclíptica, los polos celestes y el plano del horizonte del observador que la atraviesa.",
+        "controlArea": "El área de control tiene un botón Restablecer todo que devuelve la simulación a su estado inicial.",
+        "interactionHint": "Explora cómo se orienta la esfera celeste respecto a tu horizonte."
+      },
+      "currentDetails": "La esfera celeste está en su estado inicial."
+    },
+    "explorer": {
+      "screenSummary": {
+        "playArea": "El área de juego combina el diagrama del horizonte y la esfera celeste, permitiéndote cambiar tu latitud y avanzar el tiempo para observar cómo gira el cielo.",
+        "controlArea": "El área de control tiene un botón Restablecer todo que devuelve la simulación a su estado inicial.",
+        "interactionHint": "Ajusta la latitud y avanza el tiempo para explorar el cielo giratorio."
+      },
+      "currentDetails": "El explorador está en su estado inicial."
+    }
+  },
+  "preferences": {
+    "title": "Simulación",
+    "defaultLatitude": "Latitud predeterminada",
+    "defaultLongitude": "Longitud predeterminada"
+  }
+}

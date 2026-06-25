@@ -1,0 +1,58 @@
+{
+  "title": "Rotating Sky",
+  "screens": {
+    "horizonSystem": "Horizon System",
+    "celestialSphere": "Celestial Sphere",
+    "explorer": "Explorer"
+  },
+  "controls": {
+    "latitude": "Latitude",
+    "addStar": "Add Star",
+    "addStarRandomly": "Add Star Randomly",
+    "resetStarTrails": "Reset Star Trails",
+    "starTrails": "Star Trails",
+    "removeAllStars": "Remove All Stars",
+    "showBands": "Show Bands",
+    "showCelestialEquator": "Celestial Equator",
+    "showEcliptic": "Ecliptic",
+    "viewSystem": "View",
+    "celestialSphereView": "Celestial Sphere",
+    "horizonView": "Horizon",
+    "star": "Star",
+    "selectedStar": "Selected Star",
+    "rightAscension": "RA",
+    "declination": "Dec",
+    "noStarSelected": "No star selected"
+  },
+  "a11y": {
+    "horizonSystem": {
+      "screenSummary": {
+        "playArea": "The play area shows the local sky from an observer's horizon, with the cardinal directions and the Sun and stars rising and setting as the sky rotates.",
+        "controlArea": "The control area has a Reset All button that returns the simulation to its starting state.",
+        "interactionHint": "Explore how the sky looks from your location above the horizon."
+      },
+      "currentDetails": "The horizon view is in its initial state."
+    },
+    "celestialSphere": {
+      "screenSummary": {
+        "playArea": "The play area shows the celestial sphere with the celestial equator, the ecliptic, the celestial poles, and the observer's horizon plane cutting through it.",
+        "controlArea": "The control area has a Reset All button that returns the simulation to its starting state.",
+        "interactionHint": "Explore how the celestial sphere is oriented relative to your horizon."
+      },
+      "currentDetails": "The celestial sphere is in its initial state."
+    },
+    "explorer": {
+      "screenSummary": {
+        "playArea": "The play area combines the horizon diagram and the celestial sphere, letting you change your latitude and advance time to watch the sky rotate.",
+        "controlArea": "The control area has a Reset All button that returns the simulation to its starting state.",
+        "interactionHint": "Adjust the latitude and advance time to explore the rotating sky."
+      },
+      "currentDetails": "The explorer is in its initial state."
+    }
+  },
+  "preferences": {
+    "title": "Simulation",
+    "defaultLatitude": "Default Latitude",
+    "defaultLongitude": "Default Longitude"
+  }
+}

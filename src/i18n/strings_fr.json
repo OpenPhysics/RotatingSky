@@ -1,0 +1,58 @@
+{
+  "title": "Ciel Tournant",
+  "screens": {
+    "horizonSystem": "Système de l'horizon",
+    "celestialSphere": "Sphère céleste",
+    "explorer": "Explorateur"
+  },
+  "controls": {
+    "latitude": "Latitude",
+    "addStar": "Ajouter une étoile",
+    "addStarRandomly": "Ajouter une étoile au hasard",
+    "resetStarTrails": "Réinitialiser les traînées",
+    "starTrails": "Traînées d'étoiles",
+    "removeAllStars": "Supprimer toutes les étoiles",
+    "showBands": "Afficher les bandes",
+    "showCelestialEquator": "Équateur céleste",
+    "showEcliptic": "Écliptique",
+    "viewSystem": "Vue",
+    "celestialSphereView": "Sphère céleste",
+    "horizonView": "Horizon",
+    "star": "Étoile",
+    "selectedStar": "Étoile sélectionnée",
+    "rightAscension": "AD",
+    "declination": "Déc",
+    "noStarSelected": "Aucune étoile sélectionnée"
+  },
+  "a11y": {
+    "horizonSystem": {
+      "screenSummary": {
+        "playArea": "La zone de jeu montre le ciel local depuis l'horizon d'un observateur, avec les points cardinaux et le Soleil et les étoiles qui se lèvent et se couchent à mesure que le ciel tourne.",
+        "controlArea": "La zone de contrôle comporte un bouton Tout réinitialiser qui ramène la simulation à son état initial.",
+        "interactionHint": "Explorez l'aspect du ciel depuis votre position au-dessus de l'horizon."
+      },
+      "currentDetails": "La vue de l'horizon est dans son état initial."
+    },
+    "celestialSphere": {
+      "screenSummary": {
+        "playArea": "La zone de jeu montre la sphère céleste avec l'équateur céleste, l'écliptique, les pôles célestes et le plan de l'horizon de l'observateur qui la traverse.",
+        "controlArea": "La zone de contrôle comporte un bouton Tout réinitialiser qui ramène la simulation à son état initial.",
+        "interactionHint": "Explorez l'orientation de la sphère céleste par rapport à votre horizon."
+      },
+      "currentDetails": "La sphère céleste est dans son état initial."
+    },
+    "explorer": {
+      "screenSummary": {
+        "playArea": "La zone de jeu combine le diagramme de l'horizon et la sphère céleste, vous permettant de changer votre latitude et d'avancer le temps pour observer la rotation du ciel.",
+        "controlArea": "La zone de contrôle comporte un bouton Tout réinitialiser qui ramène la simulation à son état initial.",
+        "interactionHint": "Ajustez la latitude et avancez le temps pour explorer le ciel tournant."
+      },
+      "currentDetails": "L'explorateur est dans son état initial."
+    }
+  },
+  "preferences": {
+    "title": "Simulation",
+    "defaultLatitude": "Latitude par défaut",
+    "defaultLongitude": "Longitude par défaut"
+  }
+}
