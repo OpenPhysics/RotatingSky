@@ -12,7 +12,9 @@
     "resetStarTrails": "Reset Star Trails",
     "starTrails": "Star Trails",
     "removeAllStars": "Remove All Stars",
-    "showBands": "Show Bands",
+    "showHorizonPointLabels": "Show Labels",
+    "showMeridian": "Show Meridian",
+    "showCelestialReferences": "Show NCP, SCP, 0h circle, and equator",
     "showCelestialEquator": "Celestial Equator",
     "showEcliptic": "Ecliptic",
     "viewSystem": "View",
@@ -46,9 +48,10 @@
     "showLabels": "Show labels",
     "show0hCircle": "Show 0h circle",
     "showUnderside": "Show underside of horizon diagram",
-    "showNeverRise": "Show never-rise region",
-    "showRiseSet": "Show rise-and-set region",
-    "showCircumpolar": "Show circumpolar region",
+    "showNeverRise": "Show never-rise stars",
+    "showRiseSet": "Show rise and set stars",
+    "showCircumpolar": "Show circumpolar stars",
+    "hideBelowHorizon": "Hide below horizon",
     "showEquatorHorizonAngle": "Show angle between celestial equator and horizon",
     "starControls": "Star Controls",
     "starPatterns": "Star Patterns…",
@@ -64,7 +67,7 @@
     "horizonSystem": {
       "screenSummary": {
         "playArea": "The play area shows the local sky from an observer's horizon, with the cardinal directions and the Sun and stars rising and setting as the sky rotates.",
-        "controlArea": "The control area lets you set the latitude, add stars, animate time, show or hide star trails and declination bands, remove all stars, and reset the simulation.",
+        "controlArea": "The control area lets you set the latitude, add stars, animate time, show or hide star trails, the rise-and-set, circumpolar, and never-rise star regions, content below the horizon, zenith and nadir labels, the meridian, and celestial-pole references, remove all stars, and reset the simulation.",
         "interactionHint": "Explore how the sky looks from your location above the horizon."
       },
       "currentDetails": "The observer is at latitude {{latitude}} degrees. Stars shown: {{starCount}}. The local sidereal time is {{time}} hours."

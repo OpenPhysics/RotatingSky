@@ -36,7 +36,7 @@ import {
 import { HOURS_PER_DAY, normalizeDegrees, normalizeHours } from "../SkyCoordinates.js";
 import { TimeModel } from "../TimeModel.js";
 import { Star } from "./Star.js";
-import type { StarPatternStar } from "./StarPatterns.js";
+import type { StarPatternEdge, StarPatternStar } from "./StarPatterns.js";
 
 /** How much of each star's recent path to draw as a trail. */
 export type StarTrailMode = "none" | "short" | "long";
@@ -68,6 +68,12 @@ export type SkyModelOptions = {
   defaultLatitudeProperty: TReadOnlyProperty<number>;
   /** Default observer longitude (deg), from Preferences → query parameters. */
   defaultLongitudeProperty: TReadOnlyProperty<number>;
+};
+
+/** Stars added together from a preset pattern, plus its stick-figure edges. */
+export type StarPatternGroup = {
+  readonly stars: readonly Star[];
+  readonly edges: readonly StarPatternEdge[];
 };
 
 /** Sidereal-hours-per-second multiplier for each animation speed. */
@@ -102,6 +108,9 @@ export class SkyModel implements TModel {
   /** The stars currently in the sky. */
   public readonly stars: ObservableArray<Star> = createObservableArray<Star>();
 
+  /** Preset patterns on the sky (Big Dipper, Orion's Belt, …) with stick-figure edges. */
+  public readonly starPatternGroups: ObservableArray<StarPatternGroup> = createObservableArray<StarPatternGroup>();
+
   /** The selected star (whose RA/Dec readout is shown), or null. */
   public readonly selectedStarProperty = new Property<Star | null>(null);
 
@@ -114,8 +123,19 @@ export class SkyModel implements TModel {
   /** Sidereal time at which the current trails began (reset collapses trails). */
   public readonly trailStartTimeProperty = new NumberProperty(0);
 
-  /** Whether the declination "bands" (circumpolar / never-rises) are shaded. */
-  public readonly bandsVisibleProperty = new BooleanProperty(false);
+  // ── Horizon System appearance toggles ───────────────────────────────────────
+
+  /** Show the Zenith and Nadir labels on the horizon dome. */
+  public readonly zenithNadirLabelsVisibleProperty = new BooleanProperty(false);
+
+  /** Show the north–south meridian arc on the horizon dome. */
+  public readonly horizonMeridianVisibleProperty = new BooleanProperty(true);
+
+  /** Show NCP/SCP, the 0ʰ hour circle, the celestial equator, and the pole axis. */
+  public readonly horizonCelestialReferencesVisibleProperty = new BooleanProperty(false);
+
+  /** Hide stars, trails, and coordinate guides below the horizon (Horizon System). */
+  public readonly hideBelowHorizonProperty = new BooleanProperty(false);
 
   // ── Explorer appearance toggles ──────────────────────────────────────────────
 
@@ -183,9 +203,18 @@ export class SkyModel implements TModel {
   }
 
   /** Drops a preset star pattern onto the sky (used by the "star patterns…" picker). */
-  public addPattern(stars: readonly StarPatternStar[]): void {
+  public addPattern(stars: readonly StarPatternStar[], edges: readonly StarPatternEdge[] = []): void {
+    const added: Star[] = [];
     for (const { raHours, decDeg } of stars) {
-      this.addStar(raHours, decDeg);
+      const star = this.addStar(raHours, decDeg);
+      if (star) {
+        added.push(star);
+      } else {
+        break;
+      }
+    }
+    if (added.length === stars.length && edges.length > 0) {
+      this.starPatternGroups.push({ stars: added, edges });
     }
   }
 
@@ -196,16 +225,28 @@ export class SkyModel implements TModel {
     if (this.selectedStarProperty.value === star) {
       this.selectedStarProperty.value = null;
     }
+    this.removePatternGroupsContaining(star);
     this.stars.remove(star);
     star.dispose();
   }
 
   public removeAllStars(): void {
     this.selectedStarProperty.value = null;
+    this.starPatternGroups.clear();
     const removed = this.stars.slice();
     this.stars.clear();
     for (const star of removed) {
       star.dispose();
+    }
+  }
+
+  /** Removes any preset pattern that included `star`. */
+  private removePatternGroupsContaining(star: Star): void {
+    for (let i = this.starPatternGroups.length - 1; i >= 0; i--) {
+      const group = this.starPatternGroups[i];
+      if (group?.stars.includes(star)) {
+        this.starPatternGroups.remove(group);
+      }
     }
   }
 
@@ -279,7 +320,10 @@ export class SkyModel implements TModel {
     this.starTrailsVisibleProperty.reset();
     this.starTrailModeProperty.reset();
     this.trailStartTimeProperty.reset();
-    this.bandsVisibleProperty.reset();
+    this.zenithNadirLabelsVisibleProperty.reset();
+    this.horizonMeridianVisibleProperty.reset();
+    this.horizonCelestialReferencesVisibleProperty.reset();
+    this.hideBelowHorizonProperty.reset();
     this.labelsVisibleProperty.reset();
     this.hourCircleVisibleProperty.reset();
     this.celestialEquatorVisibleProperty.reset();

@@ -4,7 +4,7 @@
  * Draws the arc each star has swept since the trails were last reset. For every
  * star it samples the sidereal time from `trailStartTime` to the current time,
  * converts each sample to a point on the sphere via the caller-supplied
- * `pathPointAt`, and strokes the visible (above-horizon) portions. Hidden by the
+ * `pathPointAt`, and strokes the visible portions. Hidden by the
  * model's `starTrailsVisibleProperty`.
  */
 

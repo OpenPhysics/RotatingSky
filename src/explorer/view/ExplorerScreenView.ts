@@ -25,9 +25,13 @@ import { Checkbox, ComboBox, HSlider, RectangularPushButton, VerticalAquaRadioBu
 import type { AnimationDuration, SkyModel, StarTrailMode } from "../../common/model/SkyModel.js";
 import {
   BIG_DIPPER,
+  BIG_DIPPER_EDGES,
   CASSIOPEIA,
+  CASSIOPEIA_EDGES,
   ORIONS_BELT,
+  ORIONS_BELT_EDGES,
   SOUTHERN_CROSS,
+  SOUTHERN_CROSS_EDGES,
   type StarPattern,
 } from "../../common/model/StarPatterns.js";
 import {
@@ -64,6 +68,8 @@ import { HorizonDomeNode } from "../../common/view/HorizonDomeNode.js";
 import { HorizonGroundNode } from "../../common/view/HorizonGroundNode.js";
 import { HorizonObserverNode } from "../../common/view/HorizonObserverNode.js";
 import { HorizonPlaneNode } from "../../common/view/HorizonPlaneNode.js";
+import { SelectedStarHorizonArcsNode } from "../../common/view/SelectedStarHorizonArcsNode.js";
+import { SkyPatternLinesNode } from "../../common/view/SkyPatternLinesNode.js";
 import { SkyReadoutNode } from "../../common/view/SkyReadoutNode.js";
 import { SkyStarsNode } from "../../common/view/SkyStarsNode.js";
 import { SkyTrailsNode } from "../../common/view/SkyTrailsNode.js";
@@ -130,6 +136,14 @@ export class ExplorerScreenView extends ScreenView {
       hourCircleVisibleProperty: sky.hourCircleVisibleProperty,
     });
     celSphere.pickable = false;
+    const celPatternLines = new SkyPatternLinesNode(sky, {
+      starToPoint: (star) => ({
+        point: this.celProjection.project(raDecToVector3(star.raProperty.value, star.decProperty.value)),
+        visible: true,
+      }),
+      redrawProperties: [this.celProjection.viewMatrixProperty],
+    });
+    celPatternLines.pickable = false;
     const celStars = new SkyStarsNode(sky, {
       starToPoint: (star) => ({
         point: this.celProjection.project(raDecToVector3(star.raProperty.value, star.decProperty.value)),
@@ -149,6 +163,7 @@ export class ExplorerScreenView extends ScreenView {
     this.addChild(celSphere);
     this.addChild(new HorizonPlaneNode(this.celProjection, sky.latitudeProperty, sky.siderealTimeProperty));
     this.addChild(new EarthGlobeNode(this.celProjection, sky.latitudeProperty, sky.siderealTimeProperty));
+    this.addChild(celPatternLines);
     this.addChild(celStars);
 
     const celReadout = new SkyReadoutNode(sky, { frame: "equatorial" });
@@ -182,6 +197,19 @@ export class ExplorerScreenView extends ScreenView {
       visibleProperty: trailsVisibleProperty,
       maxLengthHoursProperty: trailMaxLengthProperty,
     });
+    const horPatternLines = new SkyPatternLinesNode(sky, {
+      starToPoint: (star) => {
+        const { altDeg, azDeg } = equatorialToHorizontal(
+          star.raProperty.value,
+          star.decProperty.value,
+          sky.latitudeProperty.value,
+          sky.siderealTimeProperty.value,
+        );
+        return { point: this.horProjection.project(altAzToVector3(altDeg, azDeg)), visible: altDeg >= 0 };
+      },
+      redrawProperties: [sky.latitudeProperty, sky.siderealTimeProperty, this.horProjection.viewMatrixProperty],
+    });
+    horPatternLines.pickable = false;
     const horStars = new SkyStarsNode(sky, {
       starToPoint: (star) => {
         const { altDeg, azDeg } = equatorialToHorizontal(
@@ -240,7 +268,9 @@ export class ExplorerScreenView extends ScreenView {
     this.addChild(new HorizonObserverNode(this.horProjection));
     this.addChild(horEquator);
     this.addChild(horAngle);
+    this.addChild(new SelectedStarHorizonArcsNode(this.horProjection, sky));
     this.addChild(horTrails);
+    this.addChild(horPatternLines);
     this.addChild(horStars);
 
     const horReadout = new SkyReadoutNode(sky, { frame: "horizontal" });
@@ -385,17 +415,37 @@ export class ExplorerScreenView extends ScreenView {
 
     // ── Star Controls panel ──────────────────────────────────────────────────────
     const patterns: StarPattern[] = [
-      { key: "bigDipper", nameProperty: controls.patternBigDipperStringProperty, stars: BIG_DIPPER },
-      { key: "orionsBelt", nameProperty: controls.patternOrionsBeltStringProperty, stars: ORIONS_BELT },
-      { key: "southernCross", nameProperty: controls.patternSouthernCrossStringProperty, stars: SOUTHERN_CROSS },
-      { key: "cassiopeia", nameProperty: controls.patternCassiopeiaStringProperty, stars: CASSIOPEIA },
+      {
+        key: "bigDipper",
+        nameProperty: controls.patternBigDipperStringProperty,
+        stars: BIG_DIPPER,
+        edges: BIG_DIPPER_EDGES,
+      },
+      {
+        key: "orionsBelt",
+        nameProperty: controls.patternOrionsBeltStringProperty,
+        stars: ORIONS_BELT,
+        edges: ORIONS_BELT_EDGES,
+      },
+      {
+        key: "southernCross",
+        nameProperty: controls.patternSouthernCrossStringProperty,
+        stars: SOUTHERN_CROSS,
+        edges: SOUTHERN_CROSS_EDGES,
+      },
+      {
+        key: "cassiopeia",
+        nameProperty: controls.patternCassiopeiaStringProperty,
+        stars: CASSIOPEIA,
+        edges: CASSIOPEIA_EDGES,
+      },
     ];
     // Action-style picker: selecting a pattern adds stars, then snaps back to the prompt.
     // reentrant allows resetting value from within the selection listener.
     const patternProperty = new Property<StarPattern | null>(null, { reentrant: true });
     patternProperty.lazyLink((pattern) => {
       if (pattern) {
-        sky.addPattern(pattern.stars);
+        sky.addPattern(pattern.stars, pattern.edges);
         patternProperty.value = null;
       }
     });

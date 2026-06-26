@@ -12,6 +12,9 @@ import type { TReadOnlyProperty } from "scenerystack/axon";
 
 export type StarPatternStar = { raHours: number; decDeg: number };
 
+/** Index pair into a pattern's star list — the stick-figure segment to draw. */
+export type StarPatternEdge = readonly [number, number];
+
 export type StarPattern = {
   /** Stable key used for the picker value. */
   readonly key: string;
@@ -19,6 +22,8 @@ export type StarPattern = {
   readonly nameProperty: TReadOnlyProperty<string>;
   /** The stars that make up the pattern. */
   readonly stars: readonly StarPatternStar[];
+  /** Line segments joining stars (indices into {@link stars}). */
+  readonly edges: readonly StarPatternEdge[];
 };
 
 /** The Big Dipper (the bright asterism in Ursa Major). */
@@ -32,11 +37,27 @@ export const BIG_DIPPER: readonly StarPatternStar[] = [
   { raHours: 13.792, decDeg: 49.31 }, // Alkaid
 ];
 
+/** Big Dipper stick figure: bowl (pan) plus handle. */
+export const BIG_DIPPER_EDGES: readonly StarPatternEdge[] = [
+  [0, 1],
+  [1, 2],
+  [2, 3],
+  [3, 0],
+  [3, 4],
+  [4, 5],
+  [5, 6],
+];
+
 /** Orion's Belt (the three near-equatorial stars of Orion). */
 export const ORIONS_BELT: readonly StarPatternStar[] = [
   { raHours: 5.679, decDeg: -1.94 }, // Alnitak
   { raHours: 5.604, decDeg: -1.2 }, // Alnilam
   { raHours: 5.533, decDeg: -0.3 }, // Mintaka
+];
+
+export const ORIONS_BELT_EDGES: readonly StarPatternEdge[] = [
+  [0, 1],
+  [1, 2],
 ];
 
 /** The Southern Cross (Crux), a southern-hemisphere asterism. */
@@ -47,6 +68,12 @@ export const SOUTHERN_CROSS: readonly StarPatternStar[] = [
   { raHours: 12.252, decDeg: -58.75 }, // Imai
 ];
 
+/** Southern Cross: long axis Gacrux–Acrux, short axis Mimosa–Imai. */
+export const SOUTHERN_CROSS_EDGES: readonly StarPatternEdge[] = [
+  [2, 0],
+  [1, 3],
+];
+
 /** Cassiopeia's "W". */
 export const CASSIOPEIA: readonly StarPatternStar[] = [
   { raHours: 0.153, decDeg: 59.15 }, // Caph
@@ -54,4 +81,11 @@ export const CASSIOPEIA: readonly StarPatternStar[] = [
   { raHours: 0.945, decDeg: 60.72 }, // Gamma Cas
   { raHours: 1.43, decDeg: 60.24 }, // Ruchbah
   { raHours: 1.906, decDeg: 63.67 }, // Segin
+];
+
+export const CASSIOPEIA_EDGES: readonly StarPatternEdge[] = [
+  [0, 1],
+  [1, 2],
+  [2, 3],
+  [3, 4],
 ];

@@ -12,6 +12,7 @@ import {
   altitudeAtHourAngle,
   declinationBand,
   equatorialToHorizontal,
+  equatorialToHorizonVector,
   horizontalToEquatorial,
 } from "../src/common/SkyCoordinates.js";
 
@@ -44,6 +45,37 @@ describe("equatorialToHorizontal", () => {
     const { altDeg, azDeg } = equatorialToHorizontal(6, 0, 40, 12); // LST − RA = +6h
     expect(altDeg).toBeCloseTo(0, 6);
     expect(azDeg).toBeCloseTo(270, 6);
+  });
+});
+
+describe("equatorialToHorizonVector", () => {
+  it("matches equatorialToHorizontal away from the zenith/nadir", () => {
+    const ra = 6;
+    const dec = 20;
+    const lat = 40;
+    const lst = 8;
+    const { altDeg } = equatorialToHorizontal(ra, dec, lat, lst);
+    const fromHorizontal = equatorialToHorizonVector(ra, dec, lat, lst);
+    const back = horizontalToEquatorial(
+      (Math.asin(fromHorizontal.z) * 180) / Math.PI,
+      (Math.atan2(fromHorizontal.y, fromHorizontal.x) * 180) / Math.PI,
+      lat,
+      lst,
+    );
+    expect(back.raHours).toBeCloseTo(ra, 5);
+    expect(back.decDeg).toBeCloseTo(dec, 5);
+    expect(altDeg).toBeCloseTo((Math.asin(fromHorizontal.z) * 180) / Math.PI, 5);
+  });
+
+  it("maps the hour circle through zenith and nadir at the north pole without azimuth jumps", () => {
+    const points = Array.from({ length: 25 }, (_, i) => equatorialToHorizonVector(0, -90 + i * 7.5, 90, 3));
+    expect(points[0]?.z).toBeCloseTo(-1, 5);
+    expect(points.at(-1)?.z).toBeCloseTo(1, 5);
+    for (let i = 1; i < points.length; i++) {
+      const a = points[i - 1];
+      const b = points[i];
+      expect(a?.dot(b)).toBeGreaterThan(0.95);
+    }
   });
 });
 

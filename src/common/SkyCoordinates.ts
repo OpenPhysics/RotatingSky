@@ -93,6 +93,28 @@ export const equatorialToHorizontal = (
 };
 
 /**
+ * Equatorial → horizon as a unit vector (+X north, +Y east, +Z zenith). Uses the
+ * same astronomy as {@link equatorialToHorizontal} but skips alt/az, so paths
+ * through the zenith or nadir stay smooth at the poles.
+ */
+export const equatorialToHorizonVector = (
+  raHours: number,
+  decDeg: number,
+  latitudeDeg: number,
+  lstHours: number,
+): Vector3 => {
+  const dec = degToRad(decDeg);
+  const lat = degToRad(latitudeDeg);
+  const ha = hoursToRadians(hourAngle(raHours, lstHours));
+
+  const north = Math.sin(dec) * Math.cos(lat) - Math.cos(dec) * Math.sin(lat) * Math.cos(ha);
+  const east = -Math.cos(dec) * Math.sin(ha);
+  const up = Math.sin(lat) * Math.sin(dec) + Math.cos(lat) * Math.cos(dec) * Math.cos(ha);
+
+  return new Vector3(north, east, up).normalized();
+};
+
+/**
  * Horizontal → equatorial — the inverse of {@link equatorialToHorizontal}. Used
  * when the user shift-clicks a point on the horizon dome to create a star there.
  */

@@ -134,6 +134,18 @@ const RotatingSkyColors = {
     projector: "#0277bd",
   }),
 
+  /** Azimuth arc for the selected star on the horizon diagram. */
+  azimuthArcColorProperty: new ProfileColorProperty(RotatingSkyNamespace, "azimuthArc", {
+    default: "#ef5350",
+    projector: "#c62828",
+  }),
+
+  /** Altitude arc for the selected star on the horizon diagram. */
+  altitudeArcColorProperty: new ProfileColorProperty(RotatingSkyNamespace, "altitudeArc", {
+    default: "#42a5f5",
+    projector: "#1565c0",
+  }),
+
   /** Shaded circumpolar band (stars that never set). */
   bandCircumpolarColorProperty: new ProfileColorProperty(RotatingSkyNamespace, "bandCircumpolar", {
     default: "rgba(79,195,247,0.25)",
@@ -142,8 +154,8 @@ const RotatingSkyColors = {
 
   /** Shaded never-rising band (stars never visible). */
   bandNeverRisesColorProperty: new ProfileColorProperty(RotatingSkyNamespace, "bandNeverRises", {
-    default: "rgba(120,120,120,0.30)",
-    projector: "rgba(120,120,120,0.20)",
+    default: "rgba(239,83,80,0.30)",
+    projector: "rgba(198,40,40,0.22)",
   }),
 
   /** Shaded rise-and-set band (stars that rise and set each day). */
