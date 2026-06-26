@@ -1,82 +1,152 @@
 /**
  * CelestialSphereScreenView.ts
  *
- * The top-level view for the simulation screen.
- *
- * All visual nodes are added here. Follow these conventions:
- *   - Use this.layoutBounds for positioning (never magic pixel values)
- *   - Keep a ResetAllButton that calls model.reset() and this.reset()
- *   - Override step(dt) for frame-by-frame animation
- *
- * ── Adding content ────────────────────────────────────────────────────────────
- * 1. Create Node subclasses in separate files (e.g. SimControlPanel.ts)
- * 2. Instantiate them here and call this.addChild(...)
- * 3. Link them to model properties:
- *      model.isRunningProperty.link( isRunning => { ... } );
- *
- * ── Layout bounds ─────────────────────────────────────────────────────────────
- * SceneryStack uses a virtual 1024×618 coordinate space by default.
- * this.layoutBounds gives you the full rectangle; use it for alignment:
- *   center, minX, maxX, minY, maxY, width, height
+ * The celestial sphere with the Earth globe at its centre and the observer's
+ * horizon plane tilted by latitude. A "view" button morphs smoothly between the
+ * celestial-sphere orientation and the horizon orientation. Drag to rotate.
  */
 
-import { Node, Rectangle, Text } from "scenerystack/scenery";
-import { ResetAllButton } from "scenerystack/scenery-phet";
+import { DerivedProperty, Multilink } from "scenerystack/axon";
+import { clamp, Vector2 } from "scenerystack/dot";
+import { DragListener, Node, Rectangle, Text, VBox } from "scenerystack/scenery";
+import { PhetFont, ResetAllButton, TimeControlNode } from "scenerystack/scenery-phet";
 import type { ScreenViewOptions } from "scenerystack/sim";
 import { ScreenView } from "scenerystack/sim";
+import { RectangularPushButton } from "scenerystack/sun";
+import { Animation, Easing } from "scenerystack/twixt";
+import { RotatingSkyPanel } from "../../common/RotatingSkyPanel.js";
+import { normalizeHours, raDecToVector3, radiansToHours, radToDeg } from "../../common/SkyCoordinates.js";
+import { SkyProjection } from "../../common/SkyProjection.js";
+import { frameMatrixForBlend } from "../../common/skyMorph.js";
+import { CelestialSphereNode } from "../../common/view/CelestialSphereNode.js";
+import { EarthGlobeNode } from "../../common/view/EarthGlobeNode.js";
+import { HorizonPlaneNode } from "../../common/view/HorizonPlaneNode.js";
+import { SkyStarsNode } from "../../common/view/SkyStarsNode.js";
+import { StringManager } from "../../i18n/StringManager.js";
 import RotatingSkyColors from "../../RotatingSkyColors.js";
-import { SCREEN_VIEW_MARGIN } from "../../RotatingSkyConstants.js";
+import { SCREEN_VIEW_MARGIN, SPHERE_RADIUS } from "../../RotatingSkyConstants.js";
 import type { CelestialSphereModel } from "../model/CelestialSphereModel.js";
 import { CelestialSphereScreenSummaryContent } from "./CelestialSphereScreenSummaryContent.js";
 
+const ROTATE_SPEED = 0.01;
+const MORPH_DURATION = 1.2; // seconds
+
 export class CelestialSphereScreenView extends ScreenView {
+  private readonly projection: SkyProjection;
+
   public constructor(model: CelestialSphereModel, options?: ScreenViewOptions) {
-    // ── Accessibility: screen summary ───────────────────────────────────────────
-    // The screen summary is the first thing a screen-reader user encounters. It
-    // is registered here, in the ScreenView's super() options, so every sim wires
-    // it the same way. See CelestialSphereScreenSummaryContent for the four content regions.
     super({
       screenSummaryContent: new CelestialSphereScreenSummaryContent(model),
       ...options,
     });
 
-    // ── Background ────────────────────────────────────────────────────────────
-    // A full-screen rectangle that follows the active color profile.
-    // Replace or remove once you add real content.
+    const sky = model.sky;
+    const controls = StringManager.getInstance().getControls();
+
     const backgroundRect = new Rectangle(0, 0, this.layoutBounds.width, this.layoutBounds.height, {
       fill: RotatingSkyColors.backgroundColorProperty,
     });
     this.addChild(backgroundRect);
 
-    // ── Placeholder label ─────────────────────────────────────────────────────
-    // Replace this with your actual simulation content.
-    const placeholderText = new Text("Celestial Sphere", {
-      font: "bold 36px sans-serif",
-      fill: RotatingSkyColors.textColorProperty,
-      center: this.layoutBounds.center,
+    this.projection = new SkyProjection({
+      center: new Vector2(this.layoutBounds.centerX - 110, this.layoutBounds.centerY),
+      radius: SPHERE_RADIUS,
+      elevation: -0.35,
+      azimuth: 0,
     });
-    this.addChild(placeholderText);
 
-    // ── Accessibility: per-control names ────────────────────────────────────────
-    // EVERY interactive node must carry an `accessibleName` (and an
-    // `accessibleHelpText` where useful), sourced from the StringManager `a11y`
-    // string group — never a hard-coded English literal. Sun/scenery-phet controls
-    // (NumberControl, Checkbox, ComboBox, AquaRadioButtonGroup, …) accept it as an
-    // option; a draggable plain Node needs `tagName: "div", focusable: true` too.
-    // Example (uncomment and adapt when you add a real control):
-    //
-    //   const a11y = StringManager.getInstance().getCelestialSphereA11yStrings();
-    //   const exampleButton = new RectangularPushButton({
-    //     content: someIcon,
-    //     listener: () => model.doSomething(),
-    //     accessibleName: a11y.controls.exampleControlStringProperty,
-    //   });
-    //   this.addChild(exampleButton);
+    // The frame matrix follows the morph blend, the latitude, and sidereal time.
+    Multilink.multilinkAny([sky.latitudeProperty, sky.siderealTimeProperty, model.systemBlendProperty], () => {
+      this.projection.frameMatrixProperty.value = frameMatrixForBlend(
+        model.systemBlendProperty.value,
+        sky.latitudeProperty.value,
+        sky.siderealTimeProperty.value,
+      );
+    });
 
-    // ── Reset All button ──────────────────────────────────────────────────────
-    // Always position at bottom-right (PhET convention).
+    const sphereNode = new CelestialSphereNode(this.projection);
+    const globeNode = new EarthGlobeNode(this.projection, sky.latitudeProperty, sky.siderealTimeProperty);
+    const horizonPlaneNode = new HorizonPlaneNode(this.projection, sky.latitudeProperty, sky.siderealTimeProperty);
+
+    const starsNode = new SkyStarsNode(sky, {
+      starToPoint: (star) => ({
+        point: this.projection.project(raDecToVector3(star.raProperty.value, star.decProperty.value)),
+        visible: true,
+      }),
+      pointToEquatorial: (point) => {
+        const v = this.projection.unproject(point);
+        return {
+          raHours: normalizeHours(radiansToHours(Math.atan2(v.y, v.x))),
+          decDeg: radToDeg(Math.asin(clamp(v.z, -1, 1))),
+        };
+      },
+      redrawProperties: [this.projection.viewMatrixProperty],
+      accessibleName: controls.starStringProperty,
+    });
+
+    this.addChild(sphereNode);
+    this.addChild(horizonPlaneNode);
+    this.addChild(globeNode);
+    this.addChild(starsNode);
+
+    // Drag the background to rotate the camera.
+    let lastPoint: Vector2 | null = null;
+    backgroundRect.addInputListener(
+      new DragListener({
+        start: (event) => {
+          lastPoint = event.pointer.point.copy();
+        },
+        drag: (event) => {
+          if (lastPoint) {
+            const p = event.pointer.point;
+            this.projection.rotateBy((p.x - lastPoint.x) * ROTATE_SPEED, (p.y - lastPoint.y) * ROTATE_SPEED);
+            lastPoint = p.copy();
+          }
+        },
+        end: () => {
+          lastPoint = null;
+        },
+      }),
+    );
+
+    // ── Morph control + animation ───────────────────────────────────────────────
+    let morphAnimation: Animation | null = null;
+    const morphTo = (target: number): void => {
+      morphAnimation?.stop();
+      morphAnimation = new Animation({
+        property: model.systemBlendProperty,
+        to: target,
+        duration: MORPH_DURATION,
+        easing: Easing.CUBIC_IN_OUT,
+      });
+      morphAnimation.start();
+    };
+
+    const viewButtonLabel = new DerivedProperty(
+      [model.systemBlendProperty, controls.horizonViewStringProperty, controls.celestialSphereViewStringProperty],
+      (blend, horizon, celestial) => (blend < 0.5 ? horizon : celestial),
+    );
+    const viewButton = new RectangularPushButton({
+      content: new Text(viewButtonLabel, { font: new PhetFont(14), fill: "#000000" }),
+      listener: () => morphTo(model.systemBlendProperty.value < 0.5 ? 1 : 0),
+      accessibleName: viewButtonLabel,
+    });
+
+    const timeControl = new TimeControlNode(sky.timer.isPlayingProperty, {
+      timeSpeedProperty: sky.timeSpeedProperty,
+      playPauseStepButtonOptions: {
+        stepForwardButtonOptions: { listener: () => sky.stepForward() },
+      },
+    });
+
+    const panel = new RotatingSkyPanel(new VBox({ align: "left", spacing: 14, children: [viewButton, timeControl] }));
+    panel.right = this.layoutBounds.maxX - SCREEN_VIEW_MARGIN;
+    panel.top = this.layoutBounds.minY + SCREEN_VIEW_MARGIN;
+    this.addChild(panel);
+
     const resetAllButton = new ResetAllButton({
       listener: () => {
+        morphAnimation?.stop();
         model.reset();
         this.reset();
       },
@@ -85,35 +155,14 @@ export class CelestialSphereScreenView extends ScreenView {
     });
     this.addChild(resetAllButton);
 
-    // ── Accessibility: keyboard / reading traversal order ───────────────────────
-    // Make the parallel DOM (Tab order and screen-reader reading order)
-    // deterministic and independent of child z-order. ScreenView throws if you
-    // set pdomOrder on itself, so add a lightweight wrapper Node that "borrows"
-    // the interactive nodes in the order a user should reach them — Reset All
-    // last. Non-interactive decoration (background, placeholder) is omitted.
-    this.addChild(
-      new Node({
-        pdomOrder: [
-          // TODO: add the sim's interactive nodes here, in traversal order
-          resetAllButton,
-        ],
-      }),
-    );
+    this.addChild(new Node({ pdomOrder: [viewButton, timeControl, starsNode, resetAllButton] }));
   }
 
-  /**
-   * Resets view-side state (animations, panel visibility, etc.).
-   * Called by the Reset All button listener.
-   */
   public reset(): void {
-    // TODO: reset any view-side state here
+    this.projection.reset();
   }
 
-  /**
-   * Steps the view forward by dt seconds for animation.
-   * @param _dt - elapsed time in seconds
-   */
   public override step(_dt: number): void {
-    // TODO: implement animation updates here
+    // Model.step advances sidereal time; nodes react via Properties.
   }
 }

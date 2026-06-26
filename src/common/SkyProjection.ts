@@ -16,7 +16,7 @@
  * occlusion (solid vs. dashed strokes).
  */
 
-import { DerivedProperty, NumberProperty, type TReadOnlyProperty } from "scenerystack/axon";
+import { DerivedProperty, NumberProperty, Property, type TReadOnlyProperty } from "scenerystack/axon";
 import { clamp, Matrix3, Vector2, Vector3 } from "scenerystack/dot";
 
 export type ProjectedPoint = { point: Vector2; depth: number };
@@ -44,7 +44,14 @@ export class SkyProjection {
   /** Camera tilt about the screen-right axis (X). Adjusted by vertical drag. */
   public readonly elevationProperty: NumberProperty;
 
-  /** Rotation applied to every world point before orthographic projection. */
+  /**
+   * A reference-frame rotation applied to every world point *before* the camera.
+   * Defaults to identity; the Celestial Sphere screen animates it to morph
+   * smoothly between the equatorial and horizon orientations.
+   */
+  public readonly frameMatrixProperty: Property<Matrix3>;
+
+  /** Full rotation (camera ∘ frame) applied to every world point before projection. */
   public readonly viewMatrixProperty: TReadOnlyProperty<Matrix3>;
 
   public constructor(providedOptions?: SkyProjectionOptions) {
@@ -60,12 +67,13 @@ export class SkyProjection {
     this.radius = options.radius;
     this.azimuthProperty = new NumberProperty(options.azimuth);
     this.elevationProperty = new NumberProperty(options.elevation);
+    this.frameMatrixProperty = new Property(Matrix3.identity());
 
     this.viewMatrixProperty = new DerivedProperty(
-      [this.azimuthProperty, this.elevationProperty],
-      (azimuth, elevation) =>
-        // Spin about world Z first, then pitch the camera about screen-right X.
-        Matrix3.rotationX(elevation).timesMatrix(Matrix3.rotationZ(azimuth)),
+      [this.azimuthProperty, this.elevationProperty, this.frameMatrixProperty],
+      (azimuth, elevation, frame) =>
+        // Apply the frame rotation, then spin about world Z, then pitch about X.
+        Matrix3.rotationX(elevation).timesMatrix(Matrix3.rotationZ(azimuth)).timesMatrix(frame),
     );
   }
 
@@ -113,15 +121,17 @@ export class SkyProjection {
     this.elevationProperty.value = clamp(this.elevationProperty.value + deltaElevation, -MAX_ELEVATION, MAX_ELEVATION);
   }
 
-  /** Restores the camera to its initial orientation. */
+  /** Restores the camera and frame to their initial orientation. */
   public reset(): void {
     this.azimuthProperty.reset();
     this.elevationProperty.reset();
+    this.frameMatrixProperty.reset();
   }
 
   public dispose(): void {
     this.viewMatrixProperty.dispose();
     this.azimuthProperty.dispose();
     this.elevationProperty.dispose();
+    this.frameMatrixProperty.dispose();
   }
 }

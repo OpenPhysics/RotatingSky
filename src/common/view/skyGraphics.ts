@@ -49,13 +49,17 @@ export const smallCirclePoints = (axis: Vector3, polarAngleDeg: number, samples 
 export type SplitShapes = { front: Shape; back: Shape };
 
 /**
- * Projects a polyline and splits it into front / back shapes by the camera-space
- * depth of each segment (≥ 0 ⇒ front hemisphere). `closed` wraps the last point
- * back to the first.
+ * Appends a projected polyline to the given `front` / `back` shapes, routing each
+ * segment by its camera-space depth (≥ 0 ⇒ front hemisphere). Lets callers merge
+ * many polylines into a single pair of shapes.
  */
-export const projectSplitPolyline = (projection: SkyProjection, points: Vector3[], closed = true): SplitShapes => {
-  const front = new Shape();
-  const back = new Shape();
+export const addSplitPolyline = (
+  projection: SkyProjection,
+  points: Vector3[],
+  closed: boolean,
+  front: Shape,
+  back: Shape,
+): void => {
   const projected = points.map((p) => projection.projectWithDepth(p));
   const count = closed ? projected.length : projected.length - 1;
   for (let i = 0; i < count; i++) {
@@ -66,6 +70,27 @@ export const projectSplitPolyline = (projection: SkyProjection, points: Vector3[
     }
     const target = (a.depth + b.depth) / 2 >= 0 ? front : back;
     target.moveToPoint(a.point).lineToPoint(b.point);
+  }
+};
+
+/** Projects a single polyline into separate front / back shapes (occlusion). */
+export const projectSplitPolyline = (projection: SkyProjection, points: Vector3[], closed = true): SplitShapes => {
+  const front = new Shape();
+  const back = new Shape();
+  addSplitPolyline(projection, points, closed, front, back);
+  return { front, back };
+};
+
+/** Projects several polylines into a single shared pair of front / back shapes. */
+export const projectSplitPolylines = (
+  projection: SkyProjection,
+  polylines: Vector3[][],
+  closed: boolean,
+): SplitShapes => {
+  const front = new Shape();
+  const back = new Shape();
+  for (const points of polylines) {
+    addSplitPolyline(projection, points, closed, front, back);
   }
   return { front, back };
 };

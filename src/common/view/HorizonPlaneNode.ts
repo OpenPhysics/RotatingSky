@@ -1,0 +1,47 @@
+/**
+ * HorizonPlaneNode.ts
+ *
+ * The observer's horizon drawn as a great circle on the celestial sphere, tilted
+ * so its pole (the zenith) sits at RA = LST, Dec = latitude. Shown on the
+ * Celestial Sphere and Explorer screens. The far half is dashed.
+ */
+
+import { Multilink, type TReadOnlyProperty } from "scenerystack/axon";
+import { Circle, Node, Path } from "scenerystack/scenery";
+import RotatingSkyColors from "../../RotatingSkyColors.js";
+import { raDecToVector3 } from "../SkyCoordinates.js";
+import type { SkyProjection } from "../SkyProjection.js";
+import { projectSplitPolyline, smallCirclePoints } from "./skyGraphics.js";
+
+export class HorizonPlaneNode extends Node {
+  public constructor(
+    projection: SkyProjection,
+    latitudeProperty: TReadOnlyProperty<number>,
+    siderealTimeProperty: TReadOnlyProperty<number>,
+  ) {
+    super();
+
+    const back = new Path(null, {
+      stroke: RotatingSkyColors.horizonColorProperty,
+      lineWidth: 2.5,
+      lineDash: [5, 4],
+      opacity: 0.6,
+    });
+    const front = new Path(null, { stroke: RotatingSkyColors.horizonColorProperty, lineWidth: 2.5 });
+    const zenithDot = new Circle(4, { fill: RotatingSkyColors.horizonColorProperty });
+
+    this.children = [back, front, zenithDot];
+
+    Multilink.multilink(
+      [projection.viewMatrixProperty, latitudeProperty, siderealTimeProperty],
+      (_matrix, latitude, lst) => {
+        const zenithAxis = raDecToVector3(lst, latitude);
+        const split = projectSplitPolyline(projection, smallCirclePoints(zenithAxis, 90), true);
+        front.shape = split.front;
+        back.shape = split.back;
+        zenithDot.center = projection.project(zenithAxis);
+        zenithDot.visible = projection.isFrontFacing(zenithAxis);
+      },
+    );
+  }
+}

@@ -28,26 +28,26 @@
     "horizonSystem": {
       "screenSummary": {
         "playArea": "The play area shows the local sky from an observer's horizon, with the cardinal directions and the Sun and stars rising and setting as the sky rotates.",
-        "controlArea": "The control area has a Reset All button that returns the simulation to its starting state.",
+        "controlArea": "The control area lets you set the latitude, add stars, animate time, show or hide star trails and declination bands, remove all stars, and reset the simulation.",
         "interactionHint": "Explore how the sky looks from your location above the horizon."
       },
-      "currentDetails": "The horizon view is in its initial state."
+      "currentDetails": "The observer is at latitude {{latitude}} degrees. Stars shown: {{starCount}}. The local sidereal time is {{time}} hours."
     },
     "celestialSphere": {
       "screenSummary": {
         "playArea": "The play area shows the celestial sphere with the celestial equator, the ecliptic, the celestial poles, and the observer's horizon plane cutting through it.",
-        "controlArea": "The control area has a Reset All button that returns the simulation to its starting state.",
+        "controlArea": "The control area lets you switch between the celestial-sphere and horizon views, animate time, and reset the simulation.",
         "interactionHint": "Explore how the celestial sphere is oriented relative to your horizon."
       },
-      "currentDetails": "The celestial sphere is in its initial state."
+      "currentDetails": "The observer is at latitude {{latitude}} degrees. The local sidereal time is {{time}} hours."
     },
     "explorer": {
       "screenSummary": {
         "playArea": "The play area combines the horizon diagram and the celestial sphere, letting you change your latitude and advance time to watch the sky rotate.",
-        "controlArea": "The control area has a Reset All button that returns the simulation to its starting state.",
+        "controlArea": "The control area lets you add stars, animate time, show or hide star trails, set your location on the map, and reset the simulation.",
         "interactionHint": "Adjust the latitude and advance time to explore the rotating sky."
       },
-      "currentDetails": "The explorer is in its initial state."
+      "currentDetails": "The observer is at latitude {{latitude}} degrees and longitude {{longitude}} degrees. Stars shown: {{starCount}}. The local sidereal time is {{time}} hours."
     }
   },
   "preferences": {

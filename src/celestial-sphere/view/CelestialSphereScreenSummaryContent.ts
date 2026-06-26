@@ -6,33 +6,39 @@
  * a non-visual user a way to orient themselves and to re-read the simulation's
  * current state at any time.
  *
- * A summary has four regions (all optional, but provide at least the first
- * three in every sim for consistency across OpenPhysics):
+ * A summary has four regions:
  *   - playAreaContent       — what the play area contains
  *   - controlAreaContent    — what the controls do
  *   - currentDetailsContent — a LIVE paragraph describing current state
  *   - interactionHintContent — a short hint on how to get started
  *
- * ── Making "current details" live ─────────────────────────────────────────────
- * The template has no model state, so currentDetails is a static string. In a
- * real sim, build a DerivedProperty over the relevant model Properties and pass
- * it as `currentDetailsContent` so the paragraph updates as the sim runs.
- * See LunarLander/src/.../LunarLanderScreenSummaryContent.ts for the pattern.
+ * `currentDetailsContent` is a live `PatternStringProperty`: it fills the
+ * localized pattern with the observer's latitude and the local sidereal time,
+ * and updates automatically as the model changes.
  */
+import { PatternStringProperty } from "scenerystack/axon";
 import { ScreenSummaryContent } from "scenerystack/sim";
 import { StringManager } from "../../i18n/StringManager.js";
 import type { CelestialSphereModel } from "../model/CelestialSphereModel.js";
 
 export class CelestialSphereScreenSummaryContent extends ScreenSummaryContent {
-  // `model` is unused in the template but kept in the signature so real sims can
-  // derive a live currentDetailsContent from it without changing call sites.
-  public constructor(_model: CelestialSphereModel) {
+  public constructor(model: CelestialSphereModel) {
     const a11y = StringManager.getInstance().getCelestialSphereA11yStrings();
+    const sky = model.sky;
+
+    const currentDetails = new PatternStringProperty(
+      a11y.currentDetailsStringProperty,
+      {
+        latitude: sky.latitudeProperty,
+        time: sky.siderealTimeProperty,
+      },
+      { decimalPlaces: { latitude: 0, time: 1 } },
+    );
 
     super({
       playAreaContent: a11y.screenSummary.playAreaStringProperty,
       controlAreaContent: a11y.screenSummary.controlAreaStringProperty,
-      currentDetailsContent: a11y.currentDetailsStringProperty,
+      currentDetailsContent: currentDetails,
       interactionHintContent: a11y.screenSummary.interactionHintStringProperty,
     });
   }

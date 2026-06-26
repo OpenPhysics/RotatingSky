@@ -28,26 +28,26 @@
     "horizonSystem": {
       "screenSummary": {
         "playArea": "El área de juego muestra el cielo local desde el horizonte de un observador, con los puntos cardinales y el Sol y las estrellas saliendo y poniéndose a medida que el cielo gira.",
-        "controlArea": "El área de control tiene un botón Restablecer todo que devuelve la simulación a su estado inicial.",
+        "controlArea": "El área de control permite ajustar la latitud, agregar estrellas, animar el tiempo, mostrar u ocultar los rastros de estrellas y las bandas de declinación, eliminar todas las estrellas y reiniciar la simulación.",
         "interactionHint": "Explora cómo se ve el cielo desde tu ubicación sobre el horizonte."
       },
-      "currentDetails": "La vista del horizonte está en su estado inicial."
+      "currentDetails": "El observador está a una latitud de {{latitude}} grados. Estrellas mostradas: {{starCount}}. El tiempo sidéreo local es de {{time}} horas."
     },
     "celestialSphere": {
       "screenSummary": {
         "playArea": "El área de juego muestra la esfera celeste con el ecuador celeste, la eclíptica, los polos celestes y el plano del horizonte del observador que la atraviesa.",
-        "controlArea": "El área de control tiene un botón Restablecer todo que devuelve la simulación a su estado inicial.",
+        "controlArea": "El área de control permite alternar entre la vista de la esfera celeste y la del horizonte, animar el tiempo y reiniciar la simulación.",
         "interactionHint": "Explora cómo se orienta la esfera celeste respecto a tu horizonte."
       },
-      "currentDetails": "La esfera celeste está en su estado inicial."
+      "currentDetails": "El observador está a una latitud de {{latitude}} grados. El tiempo sidéreo local es de {{time}} horas."
     },
     "explorer": {
       "screenSummary": {
         "playArea": "El área de juego combina el diagrama del horizonte y la esfera celeste, permitiéndote cambiar tu latitud y avanzar el tiempo para observar cómo gira el cielo.",
-        "controlArea": "El área de control tiene un botón Restablecer todo que devuelve la simulación a su estado inicial.",
+        "controlArea": "El área de control permite agregar estrellas, animar el tiempo, mostrar u ocultar los rastros de estrellas, establecer tu ubicación en el mapa y reiniciar la simulación.",
         "interactionHint": "Ajusta la latitud y avanza el tiempo para explorar el cielo giratorio."
       },
-      "currentDetails": "El explorador está en su estado inicial."
+      "currentDetails": "El observador está a una latitud de {{latitude}} grados y una longitud de {{longitude}} grados. Estrellas mostradas: {{starCount}}. El tiempo sidéreo local es de {{time}} horas."
     }
   },
   "preferences": {

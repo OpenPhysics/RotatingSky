@@ -28,26 +28,26 @@
     "horizonSystem": {
       "screenSummary": {
         "playArea": "La zone de jeu montre le ciel local depuis l'horizon d'un observateur, avec les points cardinaux et le Soleil et les étoiles qui se lèvent et se couchent à mesure que le ciel tourne.",
-        "controlArea": "La zone de contrôle comporte un bouton Tout réinitialiser qui ramène la simulation à son état initial.",
+        "controlArea": "La zone de contrôle permet de régler la latitude, d'ajouter des étoiles, d'animer le temps, d'afficher ou de masquer les traînées d'étoiles et les bandes de déclinaison, de supprimer toutes les étoiles et de réinitialiser la simulation.",
         "interactionHint": "Explorez l'aspect du ciel depuis votre position au-dessus de l'horizon."
       },
-      "currentDetails": "La vue de l'horizon est dans son état initial."
+      "currentDetails": "L'observateur est à une latitude de {{latitude}} degrés. Étoiles affichées : {{starCount}}. Le temps sidéral local est de {{time}} heures."
     },
     "celestialSphere": {
       "screenSummary": {
         "playArea": "La zone de jeu montre la sphère céleste avec l'équateur céleste, l'écliptique, les pôles célestes et le plan de l'horizon de l'observateur qui la traverse.",
-        "controlArea": "La zone de contrôle comporte un bouton Tout réinitialiser qui ramène la simulation à son état initial.",
+        "controlArea": "La zone de contrôle permet de basculer entre la vue de la sphère céleste et la vue de l'horizon, d'animer le temps et de réinitialiser la simulation.",
         "interactionHint": "Explorez l'orientation de la sphère céleste par rapport à votre horizon."
       },
-      "currentDetails": "La sphère céleste est dans son état initial."
+      "currentDetails": "L'observateur est à une latitude de {{latitude}} degrés. Le temps sidéral local est de {{time}} heures."
     },
     "explorer": {
       "screenSummary": {
         "playArea": "La zone de jeu combine le diagramme de l'horizon et la sphère céleste, vous permettant de changer votre latitude et d'avancer le temps pour observer la rotation du ciel.",
-        "controlArea": "La zone de contrôle comporte un bouton Tout réinitialiser qui ramène la simulation à son état initial.",
+        "controlArea": "La zone de contrôle permet d'ajouter des étoiles, d'animer le temps, d'afficher ou de masquer les traînées d'étoiles, de définir votre position sur la carte et de réinitialiser la simulation.",
         "interactionHint": "Ajustez la latitude et avancez le temps pour explorer le ciel tournant."
       },
-      "currentDetails": "L'explorateur est dans son état initial."
+      "currentDetails": "L'observateur est à une latitude de {{latitude}} degrés et une longitude de {{longitude}} degrés. Étoiles affichées : {{starCount}}. Le temps sidéral local est de {{time}} heures."
     }
   },
   "preferences": {
