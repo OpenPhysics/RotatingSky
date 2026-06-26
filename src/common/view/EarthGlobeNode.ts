@@ -78,7 +78,7 @@ export class EarthGlobeNode extends Node {
 
     const addFrontLandPolygon = (shape: Shape, polygon: readonly EarthShorePoint[], lst: number): void => {
       const vertices = polygon.map((point) => shorePointToVector(point, lst));
-      addFrontHemisphereSphericalPolygon(projection, vertices, shape, mapGlobePoint);
+      addFrontHemisphereSphericalPolygon(projection, vertices, shape, mapGlobePoint, projection.center, globeRadius);
     };
 
     Multilink.multilink(

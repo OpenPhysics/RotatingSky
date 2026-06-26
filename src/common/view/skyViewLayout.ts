@@ -14,3 +14,13 @@ export const positionReadoutBelowProjection = (readout: Node, projection: SkyPro
   readout.centerX = projection.center.x;
   readout.top = projection.center.y + projection.radius + VIEW_READOUT_GAP;
 };
+
+/** Places a readout below a projected sky sphere, shifted toward its right side. */
+export const positionReadoutBelowRightOfProjection = (
+  readout: Node,
+  projection: SkyProjection,
+  offsetFromCenter = 48,
+): void => {
+  readout.left = projection.center.x + offsetFromCenter;
+  readout.top = projection.center.y + projection.radius + VIEW_READOUT_GAP;
+};

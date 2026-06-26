@@ -7,7 +7,7 @@
  * (far-side) part dashed.
  */
 
-import { type Vector2, Vector3 } from "scenerystack/dot";
+import { Vector2, Vector3 } from "scenerystack/dot";
 import { Shape } from "scenerystack/kite";
 import { degToRad } from "../SkyCoordinates.js";
 import type { SkyProjection } from "../SkyProjection.js";
@@ -58,76 +58,103 @@ const clipAtHorizon = (a: Vector3, b: Vector3, depthA: number, depthB: number): 
   return a.plus(b.minus(a).timesScalar(t)).normalized();
 };
 
-const midpointOnSphere = (a: Vector3, b: Vector3): Vector3 => a.plus(b).normalized();
+const TWO_PI = 2 * Math.PI;
+const mod2pi = (angle: number): number => ((angle % TWO_PI) + TWO_PI) % TWO_PI;
 
-const sphericalCentroid = (vertices: Vector3[]): Vector3 | null => {
-  let sum = Vector3.ZERO;
-  for (const vertex of vertices) {
-    sum = sum.plus(vertex);
+/**
+ * Index of a vertex that sits *inside* a run of front-facing points (its
+ * predecessor is also in front), so polygon traversal never begins on a horizon
+ * crossing. Returns -1 when no two consecutive points face the viewer.
+ */
+const frontRunStart = (projection: SkyProjection, vertices: Vector3[]): number => {
+  let previousFront = false;
+  for (let i = 0; i < vertices.length; i++) {
+    const vertex = vertices[i];
+    if (vertex && worldDepth(projection, vertex) > 0) {
+      if (previousFront) {
+        return i;
+      }
+      previousFront = true;
+    } else {
+      previousFront = false;
+    }
   }
-  return sum.magnitude > 1e-6 ? sum.normalized() : null;
-};
-
-const addFrontHemisphereTriangle = (
-  projection: SkyProjection,
-  a: Vector3,
-  b: Vector3,
-  c: Vector3,
-  shape: Shape,
-  mapPoint: (point: Vector3) => Vector2,
-  subdivision = 0,
-): void => {
-  const dA = worldDepth(projection, a);
-  const dB = worldDepth(projection, b);
-  const dC = worldDepth(projection, c);
-
-  if (dA < 0 && dB < 0 && dC < 0) {
-    return;
-  }
-  if (dA >= 0 && dB >= 0 && dC >= 0) {
-    shape.moveToPoint(mapPoint(a));
-    shape.lineToPoint(mapPoint(b));
-    shape.lineToPoint(mapPoint(c));
-    shape.close();
-    return;
-  }
-  if (subdivision >= 5) {
-    return;
-  }
-
-  const ab = midpointOnSphere(a, b);
-  const bc = midpointOnSphere(b, c);
-  const ca = midpointOnSphere(c, a);
-  addFrontHemisphereTriangle(projection, a, ab, ca, shape, mapPoint, subdivision + 1);
-  addFrontHemisphereTriangle(projection, ab, b, bc, shape, mapPoint, subdivision + 1);
-  addFrontHemisphereTriangle(projection, ca, bc, c, shape, mapPoint, subdivision + 1);
-  addFrontHemisphereTriangle(projection, ab, bc, ca, shape, mapPoint, subdivision + 1);
+  return -1;
 };
 
 /**
- * Fills the near-hemisphere portion of a spherical polygon by fan-triangulating
- * on the surface and recursively subdividing triangles that cross the view horizon.
+ * Fills the near-hemisphere portion of a closed spherical polygon (e.g. a
+ * coastline) onto an opaque globe of radius `discRadius` centred at `center`.
+ *
+ * Ported from NAAP's `Globe.updateGlobe`: it traces the polygon's real outline
+ * (so concave bays/peninsulas survive — unlike a centroid fan), and whenever the
+ * outline dips to the far side it detours out past the limb to a ring at
+ * 1.5·`discRadius`, skirts that ring the short way to the re-entry point, then
+ * drops back in. The caller clips the path to the globe disc, which trims the
+ * over-drawn ring into a clean round limb. `mapPoint` projects a sphere vector to
+ * the globe's screen point; it must scale about `center` so screen angles match.
  */
 export const addFrontHemisphereSphericalPolygon = (
   projection: SkyProjection,
   vertices: Vector3[],
   shape: Shape,
   mapPoint: (point: Vector3) => Vector2,
+  center: Vector2,
+  discRadius: number,
 ): void => {
-  if (vertices.length < 3) {
-    return;
+  const count = vertices.length;
+  const start = count < 3 ? -1 : frontRunStart(projection, vertices);
+  const startVertex = start < 0 ? undefined : vertices[start];
+  if (!startVertex) {
+    return; // fewer than three vertices, or nothing on the near side
   }
-  const centroid = sphericalCentroid(vertices);
-  if (!centroid) {
-    return;
-  }
-  for (let i = 0; i < vertices.length; i++) {
-    const a = vertices[i];
-    const b = vertices[(i + 1) % vertices.length];
-    if (a && b) {
-      addFrontHemisphereTriangle(projection, centroid, a, b, shape, mapPoint);
+
+  // Detour ring sits outside the disc; minStep keeps each ring chord outside the
+  // disc (radius·1.1 > radius) so the masked-off arc reads as the round limb.
+  const ring = discRadius * 1.5;
+  const minStep = 2 * Math.acos((discRadius * 1.1) / ring);
+  const angleOf = (point: Vector2): number => Math.atan2(point.y - center.y, point.x - center.x);
+  const ringPoint = (angle: number): Vector2 =>
+    new Vector2(center.x + ring * Math.cos(angle), center.y + ring * Math.sin(angle));
+
+  // Skirt the limb outside the disc from `fromAngle` to `toAngle`, the short way.
+  const skirtLimb = (fromAngle: number, toAngle: number): void => {
+    let arc = mod2pi(toAngle - fromAngle);
+    const direction = arc > Math.PI ? -1 : 1;
+    if (arc > Math.PI) {
+      arc = TWO_PI - arc;
     }
+    const segments = Math.ceil(arc / minStep);
+    for (let s = 1; s <= segments; s++) {
+      shape.lineToPoint(ringPoint(fromAngle + (direction * arc * s) / segments));
+    }
+  };
+
+  shape.moveToPoint(mapPoint(startVertex));
+  let wasBack = false;
+  let exitAngle = 0;
+  for (let k = 1; k < count; k++) {
+    const vertex = vertices[(start + k) % count];
+    if (!vertex) {
+      continue;
+    }
+    const screen = mapPoint(vertex);
+    const back = worldDepth(projection, vertex) < 0;
+    if (back) {
+      if (!wasBack) {
+        // Just crossed to the far side: step out past the limb at this angle.
+        exitAngle = angleOf(screen);
+        shape.lineToPoint(ringPoint(exitAngle));
+      }
+    } else {
+      if (wasBack) {
+        skirtLimb(exitAngle, angleOf(screen)); // re-entering the near side
+      }
+      shape.lineToPoint(screen);
+    }
+    wasBack = back;
   }
+  shape.close();
 };
 
 /**

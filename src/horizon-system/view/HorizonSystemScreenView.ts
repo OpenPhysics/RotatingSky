@@ -43,7 +43,7 @@ import { SelectedStarHorizonArcsNode } from "../../common/view/SelectedStarHoriz
 import { SkyReadoutNode } from "../../common/view/SkyReadoutNode.js";
 import { SkyStarsNode } from "../../common/view/SkyStarsNode.js";
 import { SkyTrailsNode } from "../../common/view/SkyTrailsNode.js";
-import { positionReadoutBelowProjection } from "../../common/view/skyViewLayout.js";
+import { positionReadoutBelowRightOfProjection } from "../../common/view/skyViewLayout.js";
 import { StringManager } from "../../i18n/StringManager.js";
 import RotatingSkyColors from "../../RotatingSkyColors.js";
 import {
@@ -74,10 +74,12 @@ const layoutHorizonSystemProjection = (
   const playBottom = layoutBounds.maxY - RESET_ALL_BUTTON_BOTTOM_MARGIN;
 
   const playWidth = playRight - playLeft;
-  const verticalForSphere = playBottom - playTop - STAR_READOUT_HEIGHT - VIEW_READOUT_GAP - 12;
-  const radius = Math.min(playWidth / 2, verticalForSphere / 2) * 0.96;
+  const playHeight = playBottom - playTop;
+  const readoutReserve = STAR_READOUT_HEIGHT + VIEW_READOUT_GAP;
+  const radius = Math.min(playWidth / 2, (playHeight - readoutReserve) / 2) * 0.96;
   const centerX = (playLeft + playRight) / 2;
-  const centerY = playTop + verticalForSphere / 2;
+  // Top-align the dome so the az/alt readout can sit below-right without extra vertical slack.
+  const centerY = playTop + radius;
 
   return { center: new Vector2(centerX, centerY), radius };
 };
@@ -296,7 +298,7 @@ export class HorizonSystemScreenView extends ScreenView {
     this.addChild(starsNode);
 
     const starReadout = new SkyReadoutNode(sky, { frame: "horizontal" });
-    positionReadoutBelowProjection(starReadout, this.projection);
+    positionReadoutBelowRightOfProjection(starReadout, this.projection);
     this.addChild(starReadout);
 
     // Drag the empty background to rotate the camera.
@@ -309,7 +311,7 @@ export class HorizonSystemScreenView extends ScreenView {
         drag: (event) => {
           if (lastPoint) {
             const p = event.pointer.point;
-            this.projection.rotateBy((lastPoint.x - p.x) * ROTATE_SPEED, (lastPoint.y - p.y) * ROTATE_SPEED);
+            this.projection.rotateBy((p.x - lastPoint.x) * ROTATE_SPEED, (lastPoint.y - p.y) * ROTATE_SPEED);
             lastPoint = p.copy();
           }
         },

@@ -5,11 +5,15 @@
  * orientation (azimuth + elevation, adjusted by drag-to-rotate) and turns unit
  * vectors on the sphere into screen points.
  *
- * The camera frame is: screen-right = X′, toward-viewer = Y′, screen-up = Z′.
+ * The camera frame is: screen-right = −X′, toward-viewer = Y′, screen-up = Z′.
  * A world point `p` is rotated by the view matrix, then:
- *   screenX = center.x + p′.x · radius
+ *   screenX = center.x − p′.x · radius
  *   screenY = center.y − p′.z · radius        (screen Y grows downward)
  *   depth   = p′.y                            (≥ 0 ⇒ front hemisphere)
+ *
+ * Screen-right is −X′ (not +X′) so the (right, up, toward-viewer) frame is
+ * right-handed: an orthographic +X′ mapping would mirror the scene, which is
+ * invisible on symmetric content but flips the chiral Earth globe east↔west.
  *
  * Views observe `viewMatrixProperty` to redraw when the camera moves, and call
  * `projectWithDepth()` so a single rotation drives both position and front/back
@@ -81,7 +85,7 @@ export class SkyProjection {
   public projectWithDepth(point: Vector3): ProjectedPoint {
     const p = this.viewMatrixProperty.value.timesVector3(point);
     return {
-      point: new Vector2(this.center.x + p.x * this.radius, this.center.y - p.z * this.radius),
+      point: new Vector2(this.center.x - p.x * this.radius, this.center.y - p.z * this.radius),
       depth: p.y,
     };
   }
@@ -102,7 +106,7 @@ export class SkyProjection {
    * The view matrix is a pure rotation, so its inverse is its transpose.
    */
   public unproject(screenPoint: Vector2): Vector3 {
-    const x = (screenPoint.x - this.center.x) / this.radius;
+    const x = (this.center.x - screenPoint.x) / this.radius;
     const z = (this.center.y - screenPoint.y) / this.radius;
     const r2 = x * x + z * z;
     let cam: Vector3;

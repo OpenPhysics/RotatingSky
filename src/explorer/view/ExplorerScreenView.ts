@@ -615,7 +615,7 @@ export class ExplorerScreenView extends ScreenView {
         drag: (event) => {
           if (lastPoint) {
             const p = event.pointer.point;
-            projection.rotateBy((lastPoint.x - p.x) * ROTATE_SPEED, (lastPoint.y - p.y) * ROTATE_SPEED);
+            projection.rotateBy((p.x - lastPoint.x) * ROTATE_SPEED, (lastPoint.y - p.y) * ROTATE_SPEED);
             lastPoint = p.copy();
           }
         },
