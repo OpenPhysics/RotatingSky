@@ -180,6 +180,21 @@ export class ExplorerScreenView extends ScreenView {
       accessibleName: controls.starStringProperty,
     });
 
+    // The same declination bands as the celestial sphere, mapped into the horizon
+    // frame: caps tilt with latitude and the never-rise cap drops below the horizon.
+    // Bands span all RA, so the LST is immaterial — use 0 for the rotationally
+    // symmetric result.
+    const horRegions = new DeclinationRegionsNode(this.horProjection, sky.latitudeProperty, {
+      circumpolarVisibleProperty: sky.circumpolarRegionVisibleProperty,
+      riseSetVisibleProperty: sky.riseSetRegionVisibleProperty,
+      neverRiseVisibleProperty: sky.neverRiseRegionVisibleProperty,
+      toVector: (raHours, decDeg) => {
+        const { altDeg, azDeg } = equatorialToHorizontal(raHours, decDeg, sky.latitudeProperty.value, 0);
+        return altAzToVector3(altDeg, azDeg);
+      },
+    });
+    horRegions.pickable = false;
+
     const horEquator = new CelestialEquatorOnHorizonNode(
       this.horProjection,
       sky.latitudeProperty,
@@ -197,6 +212,7 @@ export class ExplorerScreenView extends ScreenView {
     horLabel.top = SCREEN_VIEW_MARGIN + 14;
     this.addChild(horLabel);
     this.addChild(this.addSphereInteraction(this.horProjection, (point) => this.horizonPointToEquatorial(point)));
+    this.addChild(horRegions);
     this.addChild(
       new HorizonDomeNode(this.horProjection, sky.latitudeProperty, {
         undersideVisibleProperty: sky.horizonUndersideVisibleProperty,
@@ -481,7 +497,7 @@ export class ExplorerScreenView extends ScreenView {
         drag: (event) => {
           if (lastPoint) {
             const p = event.pointer.point;
-            projection.rotateBy((p.x - lastPoint.x) * ROTATE_SPEED, (p.y - lastPoint.y) * ROTATE_SPEED);
+            projection.rotateBy((lastPoint.x - p.x) * ROTATE_SPEED, (lastPoint.y - p.y) * ROTATE_SPEED);
             lastPoint = p.copy();
           }
         },

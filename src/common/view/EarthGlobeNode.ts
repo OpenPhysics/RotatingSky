@@ -15,6 +15,7 @@ import { Circle, Node, Path } from "scenerystack/scenery";
 import RotatingSkyColors from "../../RotatingSkyColors.js";
 import { raDecToVector3 } from "../SkyCoordinates.js";
 import type { SkyProjection } from "../SkyProjection.js";
+import { EARTH_SHORE_POLYGONS, type EarthShorePoint } from "./EarthShoreData.js";
 import { smallCirclePoints } from "./skyGraphics.js";
 
 const NCP = new Vector3(0, 0, 1);
@@ -37,6 +38,12 @@ export class EarthGlobeNode extends Node {
       lineWidth: 1,
       center: projection.center,
     });
+    const landPath = new Path(null, {
+      fill: RotatingSkyColors.earthLandColorProperty,
+      stroke: RotatingSkyColors.sphereOutlineColorProperty,
+      lineWidth: 0.35,
+      opacity: 0.95,
+    });
     const gridPath = new Path(null, { stroke: RotatingSkyColors.earthLandColorProperty, lineWidth: 1, opacity: 0.8 });
     const observerDot = new Circle(5, {
       fill: RotatingSkyColors.observerColorProperty,
@@ -44,7 +51,13 @@ export class EarthGlobeNode extends Node {
       lineWidth: 1,
     });
 
-    this.children = [disc, gridPath, observerDot];
+    this.children = [disc, landPath, gridPath, observerDot];
+
+    const shorePointToVector = (point: EarthShorePoint, lst: number): Vector3 => {
+      const lonHours = (Math.atan2(point.y, point.x) / (2 * Math.PI)) * 24;
+      const latDeg = Math.asin(point.z) * (180 / Math.PI);
+      return raDecToVector3(lst + lonHours, latDeg);
+    };
 
     // Project a unit vector onto the (smaller) globe; report front-facing.
     const toGlobe = (v: Vector3): { point: Vector2; front: boolean } => {
@@ -72,10 +85,39 @@ export class EarthGlobeNode extends Node {
       }
     };
 
+    const addFrontLandPolygon = (shape: Shape, polygon: readonly EarthShorePoint[], lst: number): void => {
+      let penDown = false;
+      for (const point of polygon) {
+        const projected = toGlobe(shorePointToVector(point, lst));
+        if (!projected.front) {
+          if (penDown) {
+            shape.close();
+          }
+          penDown = false;
+          continue;
+        }
+        if (penDown) {
+          shape.lineToPoint(projected.point);
+        } else {
+          shape.moveToPoint(projected.point);
+          penDown = true;
+        }
+      }
+      if (penDown) {
+        shape.close();
+      }
+    };
+
     Multilink.multilink(
       [projection.viewMatrixProperty, latitudeProperty, siderealTimeProperty],
       (_m, latitude, lst) => {
         disc.center = projection.center;
+
+        const landShape = new Shape();
+        for (const polygon of EARTH_SHORE_POLYGONS) {
+          addFrontLandPolygon(landShape, polygon, lst);
+        }
+        landPath.shape = landShape;
 
         const shape = new Shape();
         addFrontPolyline(shape, smallCirclePoints(NCP, 90)); // equator

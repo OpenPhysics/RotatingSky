@@ -14,6 +14,7 @@ import { Circle, DragListener, KeyboardListener, Line, Node, Path, Rectangle } f
 import { StringManager } from "../../i18n/StringManager.js";
 import RotatingSkyColors from "../../RotatingSkyColors.js";
 import { LATITUDE_RANGE, LOCATION_STEP_DEGREES, LONGITUDE_RANGE } from "../../RotatingSkyConstants.js";
+import { EARTH_SHORE_POLYGONS } from "./EarthShoreData.js";
 
 export type FlatEarthMapNodeOptions = { width: number; height: number };
 
@@ -36,6 +37,38 @@ export class FlatEarthMapNode extends Node {
       stroke: RotatingSkyColors.sphereOutlineColorProperty,
       lineWidth: 1,
       cursor: "pointer",
+    });
+
+    const land = new Shape();
+    for (const polygon of EARTH_SHORE_POLYGONS) {
+      let previousLon: number | null = null;
+      let penDown = false;
+      for (const point of polygon) {
+        const lon = Math.atan2(point.y, point.x) * (180 / Math.PI);
+        const lat = Math.asin(point.z) * (180 / Math.PI);
+        if (previousLon !== null && Math.abs(lon - previousLon) > 180) {
+          if (penDown) {
+            land.close();
+          }
+          penDown = false;
+        }
+        if (penDown) {
+          land.lineTo(lonToX(lon), latToY(lat));
+        } else {
+          land.moveTo(lonToX(lon), latToY(lat));
+          penDown = true;
+        }
+        previousLon = lon;
+      }
+      if (penDown) {
+        land.close();
+      }
+    }
+    const landPath = new Path(land, {
+      fill: RotatingSkyColors.earthLandColorProperty,
+      stroke: RotatingSkyColors.sphereOutlineColorProperty,
+      lineWidth: 0.35,
+      opacity: 0.95,
     });
 
     // Graticule: parallels every 30°, meridians every 60°.
@@ -62,7 +95,7 @@ export class FlatEarthMapNode extends Node {
     });
 
     super({
-      children: [mapRect, gridPath, equatorLine, cursor],
+      children: [mapRect, landPath, gridPath, equatorLine, cursor],
       tagName: "div",
       focusable: true,
       accessibleName: controls.latitudeStringProperty,
