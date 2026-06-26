@@ -201,8 +201,15 @@ export class FlatEarthMapNode extends Node {
       ],
     });
 
+    // Clip the cursor to the map bounds so its crosshair lines don't inflate
+    // the panel when the observer is near the map edge.
+    const cursorClip = new Node({
+      children: [cursor],
+      clipArea: Shape.rect(0, 0, width, height),
+    });
+
     super({
-      children: [mapRect, landPath, gridPath, equatorLine, cursor],
+      children: [mapRect, landPath, gridPath, equatorLine, cursorClip],
       tagName: "div",
       focusable: true,
       accessibleName: controls.latitudeStringProperty,
