@@ -28,11 +28,17 @@ import {
   BIG_DIPPER_EDGES,
   CASSIOPEIA,
   CASSIOPEIA_EDGES,
+  LITTLE_DIPPER,
+  LITTLE_DIPPER_EDGES,
+  ORION,
+  ORION_EDGES,
   ORIONS_BELT,
   ORIONS_BELT_EDGES,
   SOUTHERN_CROSS,
   SOUTHERN_CROSS_EDGES,
   type StarPattern,
+  SUMMER_TRIANGLE,
+  SUMMER_TRIANGLE_EDGES,
 } from "../../common/model/StarPatterns.js";
 import {
   FLAT_PLAY_PAUSE_STEP_BUTTON_OPTIONS,
@@ -477,6 +483,24 @@ export class ExplorerScreenView extends ScreenView {
         nameProperty: controls.patternCassiopeiaStringProperty,
         stars: CASSIOPEIA,
         edges: CASSIOPEIA_EDGES,
+      },
+      {
+        key: "summerTriangle",
+        nameProperty: controls.patternSummerTriangleStringProperty,
+        stars: SUMMER_TRIANGLE,
+        edges: SUMMER_TRIANGLE_EDGES,
+      },
+      {
+        key: "orion",
+        nameProperty: controls.patternOrionStringProperty,
+        stars: ORION,
+        edges: ORION_EDGES,
+      },
+      {
+        key: "littleDipper",
+        nameProperty: controls.patternLittleDipperStringProperty,
+        stars: LITTLE_DIPPER,
+        edges: LITTLE_DIPPER_EDGES,
       },
     ];
     // Action-style picker: selecting a pattern adds stars, then snaps back to the prompt.

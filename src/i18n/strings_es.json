@@ -61,7 +61,10 @@
     "patternBigDipper": "Carro Mayor",
     "patternOrionsBelt": "Cinturón de Orión",
     "patternSouthernCross": "Cruz del Sur",
-    "patternCassiopeia": "Casiopea"
+    "patternCassiopeia": "Casiopea",
+    "patternSummerTriangle": "Triángulo de Verano",
+    "patternOrion": "Orión",
+    "patternLittleDipper": "Osa Menor"
   },
   "a11y": {
     "horizonSystem": {

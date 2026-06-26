@@ -61,7 +61,10 @@
     "patternBigDipper": "Big Dipper",
     "patternOrionsBelt": "Orion's Belt",
     "patternSouthernCross": "Southern Cross",
-    "patternCassiopeia": "Cassiopeia"
+    "patternCassiopeia": "Cassiopeia",
+    "patternSummerTriangle": "Summer Triangle",
+    "patternOrion": "Orion",
+    "patternLittleDipper": "Little Dipper"
   },
   "a11y": {
     "horizonSystem": {

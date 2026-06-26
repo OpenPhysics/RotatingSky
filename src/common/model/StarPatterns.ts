@@ -89,3 +89,60 @@ export const CASSIOPEIA_EDGES: readonly StarPatternEdge[] = [
   [2, 3],
   [3, 4],
 ];
+
+/** The Summer Triangle (Vega, Deneb, and Altair). */
+export const SUMMER_TRIANGLE: readonly StarPatternStar[] = [
+  { raHours: 18.615, decDeg: 38.78 }, // Vega
+  { raHours: 20.69, decDeg: 45.28 }, // Deneb
+  { raHours: 19.847, decDeg: 8.85 }, // Altair
+];
+
+export const SUMMER_TRIANGLE_EDGES: readonly StarPatternEdge[] = [
+  [0, 1],
+  [1, 2],
+  [2, 0],
+];
+
+/** Orion (the Hunter): shoulders, belt, and legs. */
+export const ORION: readonly StarPatternStar[] = [
+  { raHours: 5.919, decDeg: 7.41 }, // Betelgeuse
+  { raHours: 5.418, decDeg: 6.35 }, // Bellatrix
+  { raHours: 5.679, decDeg: -1.94 }, // Alnitak
+  { raHours: 5.604, decDeg: -1.2 }, // Alnilam
+  { raHours: 5.533, decDeg: -0.3 }, // Mintaka
+  { raHours: 5.796, decDeg: -9.67 }, // Saiph
+  { raHours: 5.242, decDeg: -8.2 }, // Rigel
+];
+
+/** Orion stick figure: shoulders, belt, and legs. */
+export const ORION_EDGES: readonly StarPatternEdge[] = [
+  [0, 1],
+  [0, 2],
+  [1, 4],
+  [2, 3],
+  [3, 4],
+  [2, 5],
+  [4, 6],
+];
+
+/** The Little Dipper (Ursa Minor), with Polaris at the end of the handle. */
+export const LITTLE_DIPPER: readonly StarPatternStar[] = [
+  { raHours: 2.53, decDeg: 89.26 }, // Polaris
+  { raHours: 17.537, decDeg: 86.59 }, // Yildun
+  { raHours: 16.766, decDeg: 82.04 }, // Epsilon UMi
+  { raHours: 15.734, decDeg: 77.79 }, // Zeta UMi
+  { raHours: 16.292, decDeg: 75.76 }, // Eta UMi
+  { raHours: 15.345, decDeg: 71.83 }, // Pherkad
+  { raHours: 14.845, decDeg: 74.15 }, // Kochab
+];
+
+/** Little Dipper stick figure: bowl plus handle to Polaris. */
+export const LITTLE_DIPPER_EDGES: readonly StarPatternEdge[] = [
+  [0, 1],
+  [1, 2],
+  [2, 3],
+  [3, 4],
+  [4, 5],
+  [5, 6],
+  [6, 1],
+];

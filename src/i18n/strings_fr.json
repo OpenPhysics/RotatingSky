@@ -61,7 +61,10 @@
     "patternBigDipper": "Grande Ourse",
     "patternOrionsBelt": "Baudrier d'Orion",
     "patternSouthernCross": "Croix du Sud",
-    "patternCassiopeia": "Cassiopée"
+    "patternCassiopeia": "Cassiopée",
+    "patternSummerTriangle": "Triangle d'été",
+    "patternOrion": "Orion",
+    "patternLittleDipper": "Petite Ourse"
   },
   "a11y": {
     "horizonSystem": {
