@@ -7,9 +7,10 @@
  * nudge the location in 5° steps.
  */
 
-import { Multilink, type NumberProperty, type TReadOnlyProperty } from "scenerystack/axon";
-import { Vector2 } from "scenerystack/dot";
+import { Multilink, type NumberProperty, Property, type TReadOnlyProperty } from "scenerystack/axon";
+import { Bounds2, Vector2 } from "scenerystack/dot";
 import { Shape } from "scenerystack/kite";
+import { ModelViewTransform2 } from "scenerystack/phetcommon";
 import { Circle, DragListener, KeyboardListener, Line, Node, Path, Rectangle } from "scenerystack/scenery";
 import { StringManager } from "../../i18n/StringManager.js";
 import RotatingSkyColors from "../../RotatingSkyColors.js";
@@ -158,14 +159,16 @@ export class FlatEarthMapNode extends Node {
 
     const lonToX = (lon: number): number => ((lon + 180) / 360) * width;
     const latToY = (lat: number): number => ((90 - lat) / 180) * height;
-    const xToLon = (x: number): number => (x / width) * 360 - 180;
-    const yToLat = (y: number): number => 90 - (y / height) * 180;
+    const modelViewTransform = ModelViewTransform2.createRectangleInvertedYMapping(
+      new Bounds2(-180, -90, 180, 90),
+      new Bounds2(0, 0, width, height),
+    );
+    const modelPositionProperty = new Property(new Vector2(longitudeProperty.value, latitudeProperty.value));
 
     const mapRect = new Rectangle(0, 0, width, height, {
       fill: RotatingSkyColors.earthOceanColorProperty,
       stroke: RotatingSkyColors.sphereOutlineColorProperty,
       lineWidth: 1,
-      cursor: "pointer",
     });
 
     const landPath = new Path(buildLandShape(earthMapResolutionProperty.value, lonToX, latToY, width, height), {
@@ -192,46 +195,64 @@ export class FlatEarthMapNode extends Node {
       lineWidth: 1,
     });
 
-    // Observer cursor: crosshair + dot.
+    // Observer cursor: crosshair + dot. The transparent disk enlarges the
+    // grab target (the crosshair arms are thin) and carries the DragListener, so
+    // only the crosshair moves the observer — clicks on the map itself do nothing.
     const cursor = new Node({
+      cursor: "grab",
       children: [
+        new Circle(12, { fill: "rgba(0,0,0,0)" }),
         new Line(-10, 0, 10, 0, { stroke: RotatingSkyColors.observerColorProperty, lineWidth: 1.5 }),
         new Line(0, -10, 0, 10, { stroke: RotatingSkyColors.observerColorProperty, lineWidth: 1.5 }),
         new Circle(4, { fill: RotatingSkyColors.observerColorProperty }),
       ],
     });
 
-    // Clip the cursor to the map bounds so its crosshair lines don't inflate
-    // the panel when the observer is near the map edge.
-    const cursorClip = new Node({
-      children: [cursor],
+    // Clip overlaid content (grid, equator, cursor) to the map rect so the
+    // crosshair lines don't inflate the panel when near the map edge.
+    const overlay = new Node({
+      children: [landPath, gridPath, equatorLine, cursor],
       clipArea: Shape.rect(0, 0, width, height),
     });
 
     super({
-      children: [mapRect, landPath, gridPath, equatorLine, cursorClip],
+      children: [mapRect, overlay],
       tagName: "div",
       focusable: true,
       accessibleName: controls.latitudeStringProperty,
     });
 
+    // The DragListener clamps modelPositionProperty to the lat/long bounds
+    // itself (dragBoundsProperty). `useParentOffset` derives the grab offset
+    // from the positionProperty (not the node transform), so pressing the
+    // crosshair never shifts it.
+    const dragListener = new DragListener({
+      transform: modelViewTransform,
+      positionProperty: modelPositionProperty,
+      dragBoundsProperty: new Property(
+        new Bounds2(LONGITUDE_RANGE.min, LATITUDE_RANGE.min, LONGITUDE_RANGE.max, LATITUDE_RANGE.max),
+      ),
+      useParentOffset: true,
+    });
+    cursor.addInputListener(dragListener);
+
+    // Keep the cursor and the drag's positionProperty in sync with the
+    // observer's lat/long (keyboard / slider / reset). The positionProperty
+    // half is skipped while dragging — the DragListener owns it then — otherwise
+    // the round trip (positionProperty -> lat/long -> positionProperty) trips
+    // axon's reentry guard (the MVT round-trip leaves tiny float drift).
     Multilink.multilink([latitudeProperty, longitudeProperty], (lat, lon) => {
       cursor.translation = new Vector2(lonToX(lon), latToY(lat));
+      if (!dragListener.isPressedProperty.value) {
+        modelPositionProperty.value = new Vector2(lon, lat);
+      }
     });
 
-    const setFromLocal = (localX: number, localY: number): void => {
-      longitudeProperty.value = LONGITUDE_RANGE.constrainValue(xToLon(localX));
-      latitudeProperty.value = LATITUDE_RANGE.constrainValue(yToLat(localY));
-    };
-
-    mapRect.addInputListener(
-      new DragListener({
-        drag: (event) => {
-          const local = this.globalToLocalPoint(event.pointer.point);
-          setFromLocal(local.x, local.y);
-        },
-      }),
-    );
+    // A drag writes the (bounds-clamped) position back into the observer's lat/long.
+    modelPositionProperty.lazyLink((modelPt) => {
+      longitudeProperty.value = modelPt.x;
+      latitudeProperty.value = modelPt.y;
+    });
 
     this.addInputListener(
       new KeyboardListener({
