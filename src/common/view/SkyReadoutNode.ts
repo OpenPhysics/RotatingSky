@@ -1,9 +1,9 @@
 /**
  * SkyReadoutNode.ts
  *
- * A small readout panel showing the equatorial coordinates (right ascension and
- * declination) of the currently selected star, or a "no star selected" message.
- * Updates live as the selection changes and as a selected star is dragged.
+ * Coordinate readout for the currently selected star, styled like the original NAAP
+ * lab: two label/value lines sitting directly beneath a sky view (equatorial RA/Dec
+ * under the celestial sphere, azimuth/altitude under the horizon diagram).
  */
 
 import { Multilink, type UnknownMultilink } from "scenerystack/axon";
@@ -11,60 +11,86 @@ import { Text, VBox } from "scenerystack/scenery";
 import { PhetFont } from "scenerystack/scenery-phet";
 import { StringManager } from "../../i18n/StringManager.js";
 import RotatingSkyColors from "../../RotatingSkyColors.js";
-import { CONTROL_FONT_SIZE, PANEL_TITLE_FONT_SIZE } from "../../RotatingSkyConstants.js";
+import { CONTROL_FONT_SIZE } from "../../RotatingSkyConstants.js";
 import type { SkyModel } from "../model/SkyModel.js";
+import { equatorialToHorizontal } from "../SkyCoordinates.js";
 
-/** Formats RA hours as `h m` (e.g. 6.5 → "6h 30m"). */
-const formatRA = (raHours: number): string => {
-  const h = Math.floor(raHours);
-  const m = Math.round((raHours - h) * 60);
-  return m === 60 ? `${(h + 1) % 24}h 0m` : `${h}h ${m}m`;
+export type SkyReadoutFrame = "equatorial" | "horizontal";
+
+export type SkyReadoutNodeOptions = {
+  /** Which coordinate frame to display. */
+  frame: SkyReadoutFrame;
 };
 
-/** Formats declination as a signed degree value (e.g. "+23.5°"). */
-const formatDec = (decDeg: number): string => `${decDeg >= 0 ? "+" : "−"}${Math.abs(decDeg).toFixed(1)}°`;
+const EMPTY_VALUE = "—";
+
+const formatHours = (hours: number): string => `${hours.toFixed(1)} h`;
+
+const formatDegrees = (deg: number): string => `${deg.toFixed(1)} °`;
 
 export class SkyReadoutNode extends VBox {
   private starLink: UnknownMultilink | null = null;
 
-  public constructor(model: SkyModel) {
+  public constructor(model: SkyModel, options: SkyReadoutNodeOptions) {
     const controls = StringManager.getInstance().getControls();
+    const { frame } = options;
 
-    const title = new Text(controls.selectedStarStringProperty, {
-      font: new PhetFont({ size: PANEL_TITLE_FONT_SIZE, weight: "bold" }),
+    const firstText = new Text("", {
+      font: new PhetFont(CONTROL_FONT_SIZE),
       fill: RotatingSkyColors.textColorProperty,
     });
-    const raText = new Text("", { font: new PhetFont(CONTROL_FONT_SIZE), fill: RotatingSkyColors.textColorProperty });
-    const decText = new Text("", { font: new PhetFont(CONTROL_FONT_SIZE), fill: RotatingSkyColors.textColorProperty });
+    const secondText = new Text("", {
+      font: new PhetFont(CONTROL_FONT_SIZE),
+      fill: RotatingSkyColors.textColorProperty,
+    });
 
-    super({ align: "left", spacing: 4, children: [title, raText, decText] });
+    super({ align: "left", spacing: 2, children: [firstText, secondText] });
 
     const update = (): void => {
       const star = model.selectedStarProperty.value;
-      if (star) {
-        raText.string = `${controls.rightAscensionStringProperty.value}: ${formatRA(star.raProperty.value)}`;
-        decText.string = `${controls.declinationStringProperty.value}: ${formatDec(star.decProperty.value)}`;
+      if (frame === "equatorial") {
+        if (star) {
+          firstText.string = `${controls.rightAscensionLongStringProperty.value}: ${formatHours(star.raProperty.value)}`;
+          secondText.string = `${controls.declinationLongStringProperty.value}: ${formatDegrees(star.decProperty.value)}`;
+        } else {
+          firstText.string = `${controls.rightAscensionLongStringProperty.value}: ${EMPTY_VALUE}`;
+          secondText.string = `${controls.declinationLongStringProperty.value}: ${EMPTY_VALUE}`;
+        }
+      } else if (star) {
+        const { altDeg, azDeg } = equatorialToHorizontal(
+          star.raProperty.value,
+          star.decProperty.value,
+          model.latitudeProperty.value,
+          model.siderealTimeProperty.value,
+        );
+        firstText.string = `${controls.azimuthLongStringProperty.value}: ${formatDegrees(azDeg)}`;
+        secondText.string = `${controls.altitudeLongStringProperty.value}: ${formatDegrees(altDeg)}`;
       } else {
-        raText.string = controls.noStarSelectedStringProperty.value;
-        decText.string = "";
+        firstText.string = `${controls.azimuthLongStringProperty.value}: ${EMPTY_VALUE}`;
+        secondText.string = `${controls.altitudeLongStringProperty.value}: ${EMPTY_VALUE}`;
       }
     };
 
     model.selectedStarProperty.link(() => {
       this.starLink?.dispose();
       const star = model.selectedStarProperty.value;
-      this.starLink = star ? Multilink.multilinkAny([star.raProperty, star.decProperty], update) : null;
+      if (frame === "equatorial") {
+        this.starLink = star ? Multilink.multilinkAny([star.raProperty, star.decProperty], update) : null;
+      } else {
+        this.starLink = star
+          ? Multilink.multilinkAny(
+              [star.raProperty, star.decProperty, model.latitudeProperty, model.siderealTimeProperty],
+              update,
+            )
+          : null;
+      }
       update();
     });
 
-    // Re-render when the labels themselves change (locale switch).
-    Multilink.multilinkAny(
-      [
-        controls.rightAscensionStringProperty,
-        controls.declinationStringProperty,
-        controls.noStarSelectedStringProperty,
-      ],
-      update,
-    );
+    const labelProperties =
+      frame === "equatorial"
+        ? [controls.rightAscensionLongStringProperty, controls.declinationLongStringProperty]
+        : [controls.azimuthLongStringProperty, controls.altitudeLongStringProperty];
+    Multilink.multilinkAny(labelProperties, update);
   }
 }

@@ -38,12 +38,14 @@ import { SkyBandsNode } from "../../common/view/SkyBandsNode.js";
 import { SkyReadoutNode } from "../../common/view/SkyReadoutNode.js";
 import { SkyStarsNode } from "../../common/view/SkyStarsNode.js";
 import { SkyTrailsNode } from "../../common/view/SkyTrailsNode.js";
+import { positionReadoutBelowProjection } from "../../common/view/skyViewLayout.js";
 import { StringManager } from "../../i18n/StringManager.js";
 import RotatingSkyColors from "../../RotatingSkyColors.js";
 import {
   CONTROL_FONT_SIZE,
   LATITUDE_RANGE,
   PANEL_CONTENT_SPACING,
+  RESET_ALL_BUTTON_BOTTOM_MARGIN,
   SCREEN_VIEW_MARGIN,
   SPHERE_RADIUS,
 } from "../../RotatingSkyConstants.js";
@@ -120,6 +122,10 @@ export class HorizonSystemScreenView extends ScreenView {
     this.addChild(new HorizonObserverNode(this.projection));
     this.addChild(trailsNode);
     this.addChild(starsNode);
+
+    const starReadout = new SkyReadoutNode(sky, { frame: "horizontal" });
+    positionReadoutBelowProjection(starReadout, this.projection);
+    this.addChild(starReadout);
 
     // Drag the empty background to rotate the camera.
     let lastPoint: Vector2 | null = null;
@@ -199,8 +205,6 @@ export class HorizonSystemScreenView extends ScreenView {
     const trailsCheckbox = checkbox(sky.starTrailsVisibleProperty, controls.starTrailsStringProperty);
     const bandsCheckbox = checkbox(sky.bandsVisibleProperty, controls.showBandsStringProperty);
 
-    const readout = new SkyReadoutNode(sky);
-
     const panel = new RotatingSkyPanel(
       new VBox({
         align: "left",
@@ -213,7 +217,6 @@ export class HorizonSystemScreenView extends ScreenView {
           trailsCheckbox,
           removeAllButton,
           bandsCheckbox,
-          readout,
         ],
       }),
     );
@@ -229,7 +232,7 @@ export class HorizonSystemScreenView extends ScreenView {
         this.reset();
       },
       right: this.layoutBounds.maxX - SCREEN_VIEW_MARGIN,
-      bottom: this.layoutBounds.maxY - SCREEN_VIEW_MARGIN,
+      bottom: this.layoutBounds.maxY - RESET_ALL_BUTTON_BOTTOM_MARGIN,
     });
     this.addChild(resetAllButton);
 
@@ -244,6 +247,7 @@ export class HorizonSystemScreenView extends ScreenView {
           removeAllButton,
           bandsCheckbox,
           starsNode,
+          starReadout,
           resetAllButton,
         ],
       }),

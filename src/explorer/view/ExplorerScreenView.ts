@@ -67,6 +67,7 @@ import { HorizonPlaneNode } from "../../common/view/HorizonPlaneNode.js";
 import { SkyReadoutNode } from "../../common/view/SkyReadoutNode.js";
 import { SkyStarsNode } from "../../common/view/SkyStarsNode.js";
 import { SkyTrailsNode } from "../../common/view/SkyTrailsNode.js";
+import { positionReadoutBelowProjection } from "../../common/view/skyViewLayout.js";
 import { StringManager } from "../../i18n/StringManager.js";
 import RotatingSkyColors from "../../RotatingSkyColors.js";
 import {
@@ -77,6 +78,7 @@ import {
   LONGITUDE_RANGE,
   PANEL_CONTENT_SPACING,
   PANEL_TITLE_FONT_SIZE,
+  RESET_ALL_BUTTON_BOTTOM_MARGIN,
   SCREEN_VIEW_MARGIN,
   SHORT_TRAIL_HOURS,
 } from "../../RotatingSkyConstants.js";
@@ -148,6 +150,10 @@ export class ExplorerScreenView extends ScreenView {
     this.addChild(new HorizonPlaneNode(this.celProjection, sky.latitudeProperty, sky.siderealTimeProperty));
     this.addChild(new EarthGlobeNode(this.celProjection, sky.latitudeProperty, sky.siderealTimeProperty));
     this.addChild(celStars);
+
+    const celReadout = new SkyReadoutNode(sky, { frame: "equatorial" });
+    positionReadoutBelowProjection(celReadout, this.celProjection);
+    this.addChild(celReadout);
 
     // ── Horizon diagram (right) ─────────────────────────────────────────────────
     this.horProjection = new SkyProjection({
@@ -236,6 +242,10 @@ export class ExplorerScreenView extends ScreenView {
     this.addChild(horAngle);
     this.addChild(horTrails);
     this.addChild(horStars);
+
+    const horReadout = new SkyReadoutNode(sky, { frame: "horizontal" });
+    positionReadoutBelowProjection(horReadout, this.horProjection);
+    this.addChild(horReadout);
 
     // ── Shared control builders ─────────────────────────────────────────────────
     const panelTitle = (labelProperty: typeof controls.observerLocationStringProperty): Text =>
@@ -455,7 +465,6 @@ export class ExplorerScreenView extends ScreenView {
           removeAllButton,
           trailRadioGroup,
           resetTrailsButton,
-          new SkyReadoutNode(sky),
         ],
       }),
     );
@@ -477,7 +486,7 @@ export class ExplorerScreenView extends ScreenView {
         this.reset();
       },
       right: this.layoutBounds.maxX - SCREEN_VIEW_MARGIN,
-      top: this.layoutBounds.minY + SCREEN_VIEW_MARGIN,
+      bottom: this.layoutBounds.maxY - RESET_ALL_BUTTON_BOTTOM_MARGIN,
     });
     this.addChild(resetAllButton);
 
@@ -499,6 +508,8 @@ export class ExplorerScreenView extends ScreenView {
           removeAllButton,
           trailRadioGroup,
           resetTrailsButton,
+          celReadout,
+          horReadout,
           celStars,
           horStars,
           resetAllButton,

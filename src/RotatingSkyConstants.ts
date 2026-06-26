@@ -26,6 +26,9 @@ import RotatingSkyNamespace from "./RotatingSkyNamespace.js";
 /** Margin between the screen edge and edge-anchored controls (e.g. Reset All). */
 export const SCREEN_VIEW_MARGIN = 20;
 
+/** Bottom inset for the Reset All button — sits slightly closer to the corner than {@link SCREEN_VIEW_MARGIN}. */
+export const RESET_ALL_BUTTON_BOTTOM_MARGIN = 10;
+
 /** Corner radius shared by control panels and dialogs. */
 export const PANEL_CORNER_RADIUS = 6;
 
@@ -58,6 +61,9 @@ export const SLIDER_THUMB_SIZE = new Dimension2(13, 26);
 
 /** Default screen-space radius of a projected sky sphere / dome. */
 export const SPHERE_RADIUS = 170;
+
+/** Vertical gap between a sky sphere and the coordinate readout beneath it. */
+export const VIEW_READOUT_GAP = 10;
 
 // ── Observer location ─────────────────────────────────────────────────────────
 
@@ -105,6 +111,7 @@ export const MAX_STARS = 30;
 export const STAR_RADIUS = 5;
 
 RotatingSkyNamespace.register("RotatingSkyConstants", {
+  RESET_ALL_BUTTON_BOTTOM_MARGIN,
   SCREEN_VIEW_MARGIN,
   PANEL_CORNER_RADIUS,
   PANEL_X_MARGIN,
@@ -117,6 +124,7 @@ RotatingSkyNamespace.register("RotatingSkyConstants", {
   NUMBER_CONTROL_SLIDER_TRACK_SIZE,
   SLIDER_THUMB_SIZE,
   SPHERE_RADIUS,
+  VIEW_READOUT_GAP,
   DEFAULT_LATITUDE,
   DEFAULT_LONGITUDE,
   LATITUDE_RANGE,

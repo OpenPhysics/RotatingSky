@@ -33,6 +33,7 @@ import RotatingSkyColors from "../../RotatingSkyColors.js";
 import {
   CONTROL_FONT_SIZE,
   PANEL_CONTENT_SPACING,
+  RESET_ALL_BUTTON_BOTTOM_MARGIN,
   SCREEN_VIEW_MARGIN,
   SPHERE_RADIUS,
 } from "../../RotatingSkyConstants.js";
@@ -171,7 +172,7 @@ export class CelestialSphereScreenView extends ScreenView {
         this.reset();
       },
       right: this.layoutBounds.maxX - SCREEN_VIEW_MARGIN,
-      bottom: this.layoutBounds.maxY - SCREEN_VIEW_MARGIN,
+      bottom: this.layoutBounds.maxY - RESET_ALL_BUTTON_BOTTOM_MARGIN,
     });
     this.addChild(resetAllButton);
 
