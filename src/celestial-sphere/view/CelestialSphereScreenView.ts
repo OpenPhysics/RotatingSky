@@ -14,6 +14,11 @@ import type { ScreenViewOptions } from "scenerystack/sim";
 import { ScreenView } from "scenerystack/sim";
 import { RectangularPushButton } from "scenerystack/sun";
 import { Animation, Easing } from "scenerystack/twixt";
+import {
+  FLAT_PLAY_PAUSE_STEP_BUTTON_OPTIONS,
+  FLAT_RECTANGULAR_BUTTON_OPTIONS,
+  FLAT_RESET_ALL_BUTTON_OPTIONS,
+} from "../../common/RotatingSkyButtonOptions.js";
 import { RotatingSkyPanel } from "../../common/RotatingSkyPanel.js";
 import { normalizeHours, raDecToVector3, radiansToHours, radToDeg } from "../../common/SkyCoordinates.js";
 import { SkyProjection } from "../../common/SkyProjection.js";
@@ -127,6 +132,7 @@ export class CelestialSphereScreenView extends ScreenView {
       (blend, horizon, celestial) => (blend < 0.5 ? horizon : celestial),
     );
     const viewButton = new RectangularPushButton({
+      ...FLAT_RECTANGULAR_BUTTON_OPTIONS,
       content: new Text(viewButtonLabel, { font: new PhetFont(14), fill: "#000000" }),
       listener: () => morphTo(model.systemBlendProperty.value < 0.5 ? 1 : 0),
       accessibleName: viewButtonLabel,
@@ -135,7 +141,11 @@ export class CelestialSphereScreenView extends ScreenView {
     const timeControl = new TimeControlNode(sky.timer.isPlayingProperty, {
       timeSpeedProperty: sky.timeSpeedProperty,
       playPauseStepButtonOptions: {
-        stepForwardButtonOptions: { listener: () => sky.stepForward() },
+        ...FLAT_PLAY_PAUSE_STEP_BUTTON_OPTIONS,
+        stepForwardButtonOptions: {
+          ...FLAT_PLAY_PAUSE_STEP_BUTTON_OPTIONS.stepForwardButtonOptions,
+          listener: () => sky.stepForward(),
+        },
       },
     });
 
@@ -145,6 +155,7 @@ export class CelestialSphereScreenView extends ScreenView {
     this.addChild(panel);
 
     const resetAllButton = new ResetAllButton({
+      ...FLAT_RESET_ALL_BUTTON_OPTIONS,
       listener: () => {
         morphAnimation?.stop();
         model.reset();

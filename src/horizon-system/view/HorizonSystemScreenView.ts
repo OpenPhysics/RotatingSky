@@ -12,6 +12,11 @@ import { NumberControl, PhetFont, ResetAllButton, TimeControlNode } from "scener
 import type { ScreenViewOptions } from "scenerystack/sim";
 import { ScreenView } from "scenerystack/sim";
 import { Checkbox, RectangularPushButton } from "scenerystack/sun";
+import {
+  FLAT_PLAY_PAUSE_STEP_BUTTON_OPTIONS,
+  FLAT_RECTANGULAR_BUTTON_OPTIONS,
+  FLAT_RESET_ALL_BUTTON_OPTIONS,
+} from "../../common/RotatingSkyButtonOptions.js";
 import { RotatingSkyPanel } from "../../common/RotatingSkyPanel.js";
 import {
   altAzToVector3,
@@ -131,6 +136,7 @@ export class HorizonSystemScreenView extends ScreenView {
       },
       titleNodeOptions: { font: new PhetFont(14), fill: RotatingSkyColors.textColorProperty, maxWidth: 180 },
       sliderOptions: { trackFillEnabled: RotatingSkyColors.textColorProperty },
+      arrowButtonOptions: FLAT_RECTANGULAR_BUTTON_OPTIONS,
     });
 
     const pushButton = (
@@ -138,6 +144,7 @@ export class HorizonSystemScreenView extends ScreenView {
       listener: () => void,
     ): RectangularPushButton =>
       new RectangularPushButton({
+        ...FLAT_RECTANGULAR_BUTTON_OPTIONS,
         content: new Text(labelProperty, { font: new PhetFont(14), fill: "#000000" }),
         listener,
         accessibleName: labelProperty,
@@ -150,7 +157,11 @@ export class HorizonSystemScreenView extends ScreenView {
     const timeControl = new TimeControlNode(sky.timer.isPlayingProperty, {
       timeSpeedProperty: sky.timeSpeedProperty,
       playPauseStepButtonOptions: {
-        stepForwardButtonOptions: { listener: () => sky.stepForward() },
+        ...FLAT_PLAY_PAUSE_STEP_BUTTON_OPTIONS,
+        stepForwardButtonOptions: {
+          ...FLAT_PLAY_PAUSE_STEP_BUTTON_OPTIONS.stepForwardButtonOptions,
+          listener: () => sky.stepForward(),
+        },
       },
     });
 
@@ -195,6 +206,7 @@ export class HorizonSystemScreenView extends ScreenView {
 
     // ── Reset All ───────────────────────────────────────────────────────────────
     const resetAllButton = new ResetAllButton({
+      ...FLAT_RESET_ALL_BUTTON_OPTIONS,
       listener: () => {
         model.reset();
         this.reset();

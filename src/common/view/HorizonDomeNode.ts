@@ -21,14 +21,16 @@ import { projectMultiPolylineShape, projectPolylineShape, smallCirclePoints } fr
 
 const ZENITH = new Vector3(0, 0, 1);
 const ALTITUDE_RINGS = [30, 60]; // degrees above the horizon
+const ALTITUDE_RINGS_BELOW = [-30, -60]; // degrees below the horizon (underside)
 const AZIMUTH_LINES = [45, 90, 135, 225, 270, 315]; // degrees (N-S meridian drawn separately)
 const POLE_DOT_RADIUS = 4;
 const LABEL_OFFSET = 14; // px, pushes labels just outside the projected point
 
-/** Upper-hemisphere arc (alt 0→90) of a vertical circle at a fixed azimuth. */
-const azimuthLinePoints = (azDeg: number): Vector3[] => {
+/** Vertical-circle arc at a fixed azimuth, over the inclusive altitude range. */
+const azimuthLinePoints = (azDeg: number, altFrom = 0, altTo = 90): Vector3[] => {
   const points: Vector3[] = [];
-  for (let alt = 0; alt <= 90; alt += 7.5) {
+  const step = altFrom <= altTo ? 7.5 : -7.5;
+  for (let alt = altFrom; step > 0 ? alt <= altTo : alt >= altTo; alt += step) {
     points.push(altAzToVector3(alt, azDeg));
   }
   return points;
@@ -37,8 +39,22 @@ const azimuthLinePoints = (azDeg: number): Vector3[] => {
 /** Upper meridian arc: N (alt 0) → zenith → S (alt 0). */
 const meridianPoints = (): Vector3[] => [...azimuthLinePoints(0), ...azimuthLinePoints(180).reverse()];
 
+/** Lower meridian arc: N (alt 0) → nadir → S (alt 0). */
+const meridianBelowPoints = (): Vector3[] => [...azimuthLinePoints(0, 0, -90), ...azimuthLinePoints(180, -90, 0)];
+
+export type HorizonDomeNodeOptions = {
+  /** Toggles the below-horizon (underside) wireframe. Defaults to hidden. */
+  undersideVisibleProperty?: TReadOnlyProperty<boolean>;
+  /** Toggles the N/E/S/W and NCP/SCP labels. Defaults to always visible. */
+  labelsVisibleProperty?: TReadOnlyProperty<boolean>;
+};
+
 export class HorizonDomeNode extends Node {
-  public constructor(projection: SkyProjection, latitudeProperty: TReadOnlyProperty<number>) {
+  public constructor(
+    projection: SkyProjection,
+    latitudeProperty: TReadOnlyProperty<number>,
+    options?: HorizonDomeNodeOptions,
+  ) {
     super();
 
     const ringsPath = new Path(null, {
@@ -57,6 +73,27 @@ export class HorizonDomeNode extends Node {
       stroke: RotatingSkyColors.horizonColorProperty,
       lineWidth: 3,
     });
+
+    // Below-horizon wireframe ("underside"), drawn faint and dashed.
+    const undersideRings = new Path(null, {
+      stroke: RotatingSkyColors.gridColorProperty,
+      lineWidth: 1,
+      lineDash: [4, 4],
+      opacity: 0.5,
+    });
+    const undersideLines = new Path(null, {
+      stroke: RotatingSkyColors.gridColorProperty,
+      lineWidth: 1,
+      lineDash: [4, 4],
+      opacity: 0.5,
+    });
+    const undersideMeridian = new Path(null, {
+      stroke: RotatingSkyColors.gridColorProperty,
+      lineWidth: 1.5,
+      lineDash: [4, 4],
+      opacity: 0.5,
+    });
+    const underside = new Node({ children: [undersideRings, undersideLines, undersideMeridian], visible: false });
 
     const cardinal = (label: string): Text =>
       new Text(label, {
@@ -79,20 +116,9 @@ export class HorizonDomeNode extends Node {
     const ncpText = poleLabel("NCP");
     const scpText = poleLabel("SCP");
 
-    this.children = [
-      ringsPath,
-      linesPath,
-      meridianPath,
-      horizonPath,
-      northText,
-      eastText,
-      southText,
-      westText,
-      ncpDot,
-      scpDot,
-      ncpText,
-      scpText,
-    ];
+    const labels = new Node({ children: [northText, eastText, southText, westText, ncpText, scpText] });
+
+    this.children = [underside, ringsPath, linesPath, meridianPath, horizonPath, ncpDot, scpDot, labels];
 
     // Place a label just outside the sphere center direction of its point.
     const placeLabel = (text: Node, point: Vector3): void => {
@@ -118,6 +144,18 @@ export class HorizonDomeNode extends Node {
       meridianPath.shape = projectPolylineShape(projection, meridianPoints(), false);
       horizonPath.shape = projectPolylineShape(projection, smallCirclePoints(ZENITH, 90), true);
 
+      undersideRings.shape = projectMultiPolylineShape(
+        projection,
+        ALTITUDE_RINGS_BELOW.map((alt) => smallCirclePoints(ZENITH, 90 - alt)),
+        true,
+      );
+      undersideLines.shape = projectMultiPolylineShape(
+        projection,
+        AZIMUTH_LINES.map((az) => azimuthLinePoints(az, 0, -90)),
+        false,
+      );
+      undersideMeridian.shape = projectPolylineShape(projection, meridianBelowPoints(), false);
+
       placeLabel(northText, altAzToVector3(0, 0));
       placeLabel(eastText, altAzToVector3(0, 90));
       placeLabel(southText, altAzToVector3(0, 180));
@@ -135,6 +173,13 @@ export class HorizonDomeNode extends Node {
       placeLabel(scpText, scp);
       ncpText.visible = ncpDot.visible;
       scpText.visible = scpDot.visible;
+    });
+
+    options?.undersideVisibleProperty?.link((visible) => {
+      underside.visible = visible;
+    });
+    options?.labelsVisibleProperty?.link((visible) => {
+      labels.visible = visible;
     });
   }
 }

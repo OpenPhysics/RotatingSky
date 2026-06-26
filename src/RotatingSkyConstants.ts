@@ -18,6 +18,7 @@
  */
 
 import { Range } from "scenerystack/dot";
+import { HOURS_PER_DAY } from "./common/SkyCoordinates.js";
 import RotatingSkyNamespace from "./RotatingSkyNamespace.js";
 
 // ── Layout / chrome (screen pixels) ───────────────────────────────────────────
@@ -56,6 +57,18 @@ export const LOCATION_STEP_DEGREES = 5;
  */
 export const SIDEREAL_HOURS_PER_SECOND = 1;
 
+/**
+ * Allowed range of the Explorer's continuous animation-rate multiplier. 1.0 is
+ * the baseline {@link SIDEREAL_HOURS_PER_SECOND}; the slider scales it.
+ */
+export const ANIMATION_RATE_RANGE = new Range(0.2, 5);
+
+/** Sidereal-hour span shown by a "short" star trail. */
+export const SHORT_TRAIL_HOURS = 3;
+
+/** Sidereal-hour span shown by a "long" star trail (one full revolution). */
+export const LONG_TRAIL_HOURS = HOURS_PER_DAY;
+
 // ── Stars ─────────────────────────────────────────────────────────────────────
 
 /** Maximum number of stars allowed in the sky at once. */
@@ -74,6 +87,9 @@ RotatingSkyNamespace.register("RotatingSkyConstants", {
   LONGITUDE_RANGE,
   LOCATION_STEP_DEGREES,
   SIDEREAL_HOURS_PER_SECOND,
+  ANIMATION_RATE_RANGE,
+  SHORT_TRAIL_HOURS,
+  LONG_TRAIL_HOURS,
   MAX_STARS,
   STAR_RADIUS,
 });

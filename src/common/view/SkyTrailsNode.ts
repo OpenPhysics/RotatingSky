@@ -28,6 +28,10 @@ export type SkyTrailsNodeOptions = {
   };
   /** Reactive inputs that change the trails (latitude, sidereal time, view matrix). */
   redrawProperties: TReadOnlyProperty<unknown>[];
+  /** Controls trail visibility. Defaults to the model's `starTrailsVisibleProperty`. */
+  visibleProperty?: TReadOnlyProperty<boolean>;
+  /** Caps the trail length (sidereal hours). Omit / null for "since last reset". */
+  maxLengthHoursProperty?: TReadOnlyProperty<number> | null;
 };
 
 // Sidereal-hour spacing between trail samples (smaller = smoother arcs).
@@ -40,17 +44,24 @@ export class SkyTrailsNode extends Node {
     const path = new Path(null, { stroke: RotatingSkyColors.trailColorProperty, lineWidth: 2 });
     this.addChild(path);
 
+    const visibleProperty = options.visibleProperty ?? model.starTrailsVisibleProperty;
+    const maxLengthProperty = options.maxLengthHoursProperty ?? null;
+
     const redraw = (): void => {
       const shape = new Shape();
       const start = model.trailStartTimeProperty.value;
       const end = model.siderealTimeProperty.value;
-      // Unwrap the swept range; cap at one full day.
-      const span = Math.min(HOURS_PER_DAY, end >= start ? end - start : end + HOURS_PER_DAY - start);
+      // Unwrap the swept range; cap at one full day, then at the requested length.
+      let span = Math.min(HOURS_PER_DAY, end >= start ? end - start : end + HOURS_PER_DAY - start);
+      if (maxLengthProperty) {
+        span = Math.min(span, maxLengthProperty.value);
+      }
+      const trailStart = end - span;
 
       for (const star of model.stars) {
         let penDown = false;
         for (let t = 0; t <= span + 1e-9; t += SAMPLE_STEP_HOURS) {
-          const { point, visible } = options.pathPointAt(star, normalizeHours(start + t));
+          const { point, visible } = options.pathPointAt(star, normalizeHours(trailStart + t));
           if (!visible) {
             penDown = false;
             continue;
@@ -70,10 +81,15 @@ export class SkyTrailsNode extends Node {
     model.stars.addItemAddedListener(redraw);
     model.stars.addItemRemovedListener(redraw);
     Multilink.multilinkAny(
-      [model.trailStartTimeProperty, model.starTrailsVisibleProperty, ...options.redrawProperties],
+      [
+        model.trailStartTimeProperty,
+        visibleProperty,
+        ...(maxLengthProperty ? [maxLengthProperty] : []),
+        ...options.redrawProperties,
+      ],
       redraw,
     );
-    model.starTrailsVisibleProperty.link((visible) => {
+    visibleProperty.link((visible) => {
       this.visible = visible;
     });
   }

@@ -10,6 +10,7 @@
 import { Text, VBox } from "scenerystack/scenery";
 import { NumberControl, PhetFont } from "scenerystack/scenery-phet";
 import type { Tandem } from "scenerystack/tandem";
+import { FLAT_RECTANGULAR_BUTTON_OPTIONS } from "../common/RotatingSkyButtonOptions.js";
 import { StringManager } from "../i18n/StringManager.js";
 import RotatingSkyColors from "../RotatingSkyColors.js";
 import { LATITUDE_RANGE, LONGITUDE_RANGE } from "../RotatingSkyConstants.js";
@@ -44,7 +45,7 @@ export class RotatingSkyPreferencesNode extends VBox {
           maxWidth: 220,
         },
         sliderOptions: { trackFillEnabled: RotatingSkyColors.textColorProperty },
-        arrowButtonOptions: { scale: 0.75 },
+        arrowButtonOptions: { ...FLAT_RECTANGULAR_BUTTON_OPTIONS, scale: 0.75 },
         layoutFunction: NumberControl.createLayoutFunction4({ sliderPadding: 5 }),
         ...(tandem && { tandem: tandem.createTandem(tandemName) }),
       });

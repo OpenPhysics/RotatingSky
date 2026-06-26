@@ -146,6 +146,12 @@ const RotatingSkyColors = {
     projector: "rgba(120,120,120,0.20)",
   }),
 
+  /** Shaded rise-and-set band (stars that rise and set each day). */
+  bandRiseSetColorProperty: new ProfileColorProperty(RotatingSkyNamespace, "bandRiseSet", {
+    default: "rgba(102,187,106,0.22)",
+    projector: "rgba(46,125,50,0.16)",
+  }),
+
   /** Land fill of the Earth globe / flat map. */
   earthLandColorProperty: new ProfileColorProperty(RotatingSkyNamespace, "earthLand", {
     default: "#6d8c5a",

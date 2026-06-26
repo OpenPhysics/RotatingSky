@@ -26,10 +26,20 @@ import {
 import { dotRandom, Range } from "scenerystack/dot";
 import type { TModel } from "scenerystack/joist";
 import { TimeSpeed } from "scenerystack/scenery-phet";
-import { LATITUDE_RANGE, LONGITUDE_RANGE, MAX_STARS, SIDEREAL_HOURS_PER_SECOND } from "../../RotatingSkyConstants.js";
+import {
+  ANIMATION_RATE_RANGE,
+  LATITUDE_RANGE,
+  LONGITUDE_RANGE,
+  MAX_STARS,
+  SIDEREAL_HOURS_PER_SECOND,
+} from "../../RotatingSkyConstants.js";
 import { HOURS_PER_DAY, normalizeDegrees, normalizeHours } from "../SkyCoordinates.js";
 import { TimeModel } from "../TimeModel.js";
 import { Star } from "./Star.js";
+import type { StarPatternStar } from "./StarPatterns.js";
+
+/** How much of each star's recent path to draw as a trail. */
+export type StarTrailMode = "none" | "short" | "long";
 
 export type SkyModelOptions = {
   /** Default observer latitude (deg), from Preferences → query parameters. */
@@ -52,6 +62,9 @@ export class SkyModel implements TModel {
   /** Animation speed (binds to the TimeControlNode speed radio buttons). */
   public readonly timeSpeedProperty = new EnumerationProperty(TimeSpeed.NORMAL);
 
+  /** Continuous animation-rate multiplier (the Explorer's "animation rate" slider). */
+  public readonly animationRateProperty = new NumberProperty(1, { range: ANIMATION_RATE_RANGE });
+
   /** Observer latitude in degrees, +N / −S. */
   public readonly latitudeProperty: NumberProperty;
 
@@ -67,14 +80,43 @@ export class SkyModel implements TModel {
   /** The selected star (whose RA/Dec readout is shown), or null. */
   public readonly selectedStarProperty = new Property<Star | null>(null);
 
-  /** Whether star trails are drawn. */
+  /** Whether star trails are drawn (single-checkbox screens). */
   public readonly starTrailsVisibleProperty = new BooleanProperty(true);
+
+  /** Trail length on the Explorer screen: none, short, or a full revolution. */
+  public readonly starTrailModeProperty = new Property<StarTrailMode>("none");
 
   /** Sidereal time at which the current trails began (reset collapses trails). */
   public readonly trailStartTimeProperty = new NumberProperty(0);
 
   /** Whether the declination "bands" (circumpolar / never-rises) are shaded. */
   public readonly bandsVisibleProperty = new BooleanProperty(false);
+
+  // ── Explorer appearance toggles ──────────────────────────────────────────────
+
+  /** Show the cardinal-direction and pole labels (N/E/S/W, NCP/SCP). */
+  public readonly labelsVisibleProperty = new BooleanProperty(false);
+
+  /** Show the 0ʰ hour circle (the RA = 0ʰ great circle through the poles). */
+  public readonly hourCircleVisibleProperty = new BooleanProperty(true);
+
+  /** Show the celestial equator on both views. */
+  public readonly celestialEquatorVisibleProperty = new BooleanProperty(true);
+
+  /** Show the underside (below-horizon hemisphere) of the horizon diagram. */
+  public readonly horizonUndersideVisibleProperty = new BooleanProperty(true);
+
+  /** Shade the circumpolar declination region (stars that never set). */
+  public readonly circumpolarRegionVisibleProperty = new BooleanProperty(false);
+
+  /** Shade the rise-and-set declination region (stars that rise and set). */
+  public readonly riseSetRegionVisibleProperty = new BooleanProperty(false);
+
+  /** Shade the never-rise declination region (stars never visible). */
+  public readonly neverRiseRegionVisibleProperty = new BooleanProperty(false);
+
+  /** Show the angle between the celestial equator and the horizon (= 90° − |lat|). */
+  public readonly equatorHorizonAngleVisibleProperty = new BooleanProperty(false);
 
   private readonly defaultLatitudeProperty: TReadOnlyProperty<number>;
   private readonly defaultLongitudeProperty: TReadOnlyProperty<number>;
@@ -106,6 +148,13 @@ export class SkyModel implements TModel {
     // Uniform on the sphere: declination from arcsin of a uniform z.
     const decDeg = (Math.asin(dotRandom.nextDoubleBetween(-1, 1)) * 180) / Math.PI;
     return this.addStar(raHours, decDeg);
+  }
+
+  /** Drops a preset star pattern onto the sky (used by the "star patterns…" picker). */
+  public addPattern(stars: readonly StarPatternStar[]): void {
+    for (const { raHours, decDeg } of stars) {
+      this.addStar(raHours, decDeg);
+    }
   }
 
   public removeStar(star: Star): void {
@@ -142,29 +191,43 @@ export class SkyModel implements TModel {
     this.siderealTimeProperty.value = normalizeHours(this.siderealTimeProperty.value + siderealHours);
   }
 
+  /** Combined multiplier: discrete speed (other screens) × continuous rate (Explorer). */
+  private get speedMultiplier(): number {
+    return (SPEED_MULTIPLIERS.get(this.timeSpeedProperty.value) ?? 1) * this.animationRateProperty.value;
+  }
+
   /** One step-forward press (used by the TimeControlNode step button). */
   public stepForward(): void {
-    this.advanceSiderealTime((SPEED_MULTIPLIERS.get(this.timeSpeedProperty.value) ?? 1) * SIDEREAL_HOURS_PER_SECOND);
+    this.advanceSiderealTime(this.speedMultiplier * SIDEREAL_HOURS_PER_SECOND);
   }
 
   public step(dt: number): void {
     this.timer.step(dt);
     if (this.timer.isPlayingProperty.value) {
-      const multiplier = SPEED_MULTIPLIERS.get(this.timeSpeedProperty.value) ?? 1;
-      this.advanceSiderealTime(dt * SIDEREAL_HOURS_PER_SECOND * multiplier);
+      this.advanceSiderealTime(dt * SIDEREAL_HOURS_PER_SECOND * this.speedMultiplier);
     }
   }
 
   public reset(): void {
     this.timer.reset();
     this.timeSpeedProperty.reset();
+    this.animationRateProperty.reset();
     // Reset to the *current* preference defaults so newly reset screens follow them.
     this.latitudeProperty.value = this.defaultLatitudeProperty.value;
     this.longitudeProperty.value = normalizeDegrees(this.defaultLongitudeProperty.value + 180) - 180;
     this.siderealTimeProperty.reset();
     this.starTrailsVisibleProperty.reset();
+    this.starTrailModeProperty.reset();
     this.trailStartTimeProperty.reset();
     this.bandsVisibleProperty.reset();
+    this.labelsVisibleProperty.reset();
+    this.hourCircleVisibleProperty.reset();
+    this.celestialEquatorVisibleProperty.reset();
+    this.horizonUndersideVisibleProperty.reset();
+    this.circumpolarRegionVisibleProperty.reset();
+    this.riseSetRegionVisibleProperty.reset();
+    this.neverRiseRegionVisibleProperty.reset();
+    this.equatorHorizonAngleVisibleProperty.reset();
     this.removeAllStars();
   }
 }

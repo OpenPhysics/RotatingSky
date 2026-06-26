@@ -1,20 +1,40 @@
 /**
  * ExplorerScreenView.ts
  *
- * The full Rotating Sky Explorer: a flat Earth map (lower-left) that sets the
- * observer's location, a celestial sphere (left), and a horizon dome (right),
- * all linked through one shared SkyModel. Stars appear on both spheres; dragging
- * a star on either moves it on both. Shift-click on a sphere adds a star there.
+ * The full Rotating Sky Explorer. Two linked 3-D views sit on top — the
+ * celestial sphere (left, with the Earth globe and declination-region shading)
+ * and the horizon diagram (right, with the celestial equator and star trails) —
+ * over four control panels:
+ *
+ *   - Observer's Location: a flat Earth map plus latitude / longitude controls,
+ *   - Animation Controls: play / step plus a continuous rate slider,
+ *   - Appearance Settings: eight toggles for the sky overlays,
+ *   - Star Controls: a star-pattern picker, add / remove, and trail length.
+ *
+ * Everything is wired through one shared {@link SkyModel}: a star dragged or
+ * added on either sphere appears on both, and every toggle drives both views.
  */
 
-import { DerivedProperty } from "scenerystack/axon";
+import { DerivedProperty, Property } from "scenerystack/axon";
 import { clamp, Vector2 } from "scenerystack/dot";
-import { DragListener, Node, Rectangle, Text, VBox } from "scenerystack/scenery";
-import { PhetFont, ResetAllButton, TimeControlNode } from "scenerystack/scenery-phet";
+import { DragListener, HBox, Node, Rectangle, Text, VBox } from "scenerystack/scenery";
+import { NumberControl, PhetFont, ResetAllButton, TimeControlNode } from "scenerystack/scenery-phet";
 import type { ScreenViewOptions } from "scenerystack/sim";
 import { ScreenView } from "scenerystack/sim";
-import { Checkbox, RectangularPushButton } from "scenerystack/sun";
-import type { SkyModel } from "../../common/model/SkyModel.js";
+import { Checkbox, ComboBox, HSlider, RectangularPushButton, VerticalAquaRadioButtonGroup } from "scenerystack/sun";
+import type { SkyModel, StarTrailMode } from "../../common/model/SkyModel.js";
+import {
+  BIG_DIPPER,
+  CASSIOPEIA,
+  ORIONS_BELT,
+  SOUTHERN_CROSS,
+  type StarPattern,
+} from "../../common/model/StarPatterns.js";
+import {
+  FLAT_PLAY_PAUSE_STEP_BUTTON_OPTIONS,
+  FLAT_RECTANGULAR_BUTTON_OPTIONS,
+  FLAT_RESET_ALL_BUTTON_OPTIONS,
+} from "../../common/RotatingSkyButtonOptions.js";
 import { RotatingSkyPanel } from "../../common/RotatingSkyPanel.js";
 import {
   altAzToVector3,
@@ -27,8 +47,11 @@ import {
   radToDeg,
 } from "../../common/SkyCoordinates.js";
 import { SkyProjection } from "../../common/SkyProjection.js";
+import { CelestialEquatorOnHorizonNode } from "../../common/view/CelestialEquatorOnHorizonNode.js";
 import { CelestialSphereNode } from "../../common/view/CelestialSphereNode.js";
+import { DeclinationRegionsNode } from "../../common/view/DeclinationRegionsNode.js";
 import { EarthGlobeNode } from "../../common/view/EarthGlobeNode.js";
+import { EquatorHorizonAngleNode } from "../../common/view/EquatorHorizonAngleNode.js";
 import { FlatEarthMapNode } from "../../common/view/FlatEarthMapNode.js";
 import { HorizonDomeNode } from "../../common/view/HorizonDomeNode.js";
 import { HorizonPlaneNode } from "../../common/view/HorizonPlaneNode.js";
@@ -37,12 +60,20 @@ import { SkyStarsNode } from "../../common/view/SkyStarsNode.js";
 import { SkyTrailsNode } from "../../common/view/SkyTrailsNode.js";
 import { StringManager } from "../../i18n/StringManager.js";
 import RotatingSkyColors from "../../RotatingSkyColors.js";
-import { SCREEN_VIEW_MARGIN } from "../../RotatingSkyConstants.js";
+import {
+  ANIMATION_RATE_RANGE,
+  LATITUDE_RANGE,
+  LONG_TRAIL_HOURS,
+  LONGITUDE_RANGE,
+  SCREEN_VIEW_MARGIN,
+  SHORT_TRAIL_HOURS,
+} from "../../RotatingSkyConstants.js";
 import type { ExplorerModel } from "../model/ExplorerModel.js";
 import { ExplorerScreenSummaryContent } from "./ExplorerScreenSummaryContent.js";
 
 const ROTATE_SPEED = 0.01;
-const SPHERE_RADIUS = 140;
+const SPHERE_RADIUS = 118;
+const BUTTON_TEXT_FILL = "#000000";
 
 export class ExplorerScreenView extends ScreenView {
   private readonly sky: SkyModel;
@@ -58,18 +89,34 @@ export class ExplorerScreenView extends ScreenView {
     const sky = model.sky;
     this.sky = sky;
     const controls = StringManager.getInstance().getControls();
+    const textFill = RotatingSkyColors.textColorProperty;
 
     const backgroundRect = new Rectangle(0, 0, this.layoutBounds.width, this.layoutBounds.height, {
       fill: RotatingSkyColors.backgroundColorProperty,
     });
     this.addChild(backgroundRect);
 
+    const viewLabel = (labelProperty: typeof controls.celestialSphereViewStringProperty): Text =>
+      new Text(labelProperty, { font: new PhetFont({ size: 13, style: "italic" }), fill: textFill });
+
     // ── Celestial sphere (left) ─────────────────────────────────────────────────
     this.celProjection = new SkyProjection({
-      center: new Vector2(250, 250),
+      center: new Vector2(245, 205),
       radius: SPHERE_RADIUS,
       elevation: -0.35,
     });
+    const celRegions = new DeclinationRegionsNode(this.celProjection, sky.latitudeProperty, {
+      circumpolarVisibleProperty: sky.circumpolarRegionVisibleProperty,
+      riseSetVisibleProperty: sky.riseSetRegionVisibleProperty,
+      neverRiseVisibleProperty: sky.neverRiseRegionVisibleProperty,
+    });
+    celRegions.pickable = false;
+    const celSphere = new CelestialSphereNode(this.celProjection, {
+      labelsVisibleProperty: sky.labelsVisibleProperty,
+      celestialEquatorVisibleProperty: sky.celestialEquatorVisibleProperty,
+      hourCircleVisibleProperty: sky.hourCircleVisibleProperty,
+    });
+    celSphere.pickable = false;
     const celStars = new SkyStarsNode(sky, {
       starToPoint: (star) => ({
         point: this.celProjection.project(raDecToVector3(star.raProperty.value, star.decProperty.value)),
@@ -79,19 +126,31 @@ export class ExplorerScreenView extends ScreenView {
       redrawProperties: [this.celProjection.viewMatrixProperty],
       accessibleName: controls.starStringProperty,
     });
+
+    const celLabel = viewLabel(controls.celestialSphereViewStringProperty);
+    celLabel.centerX = this.celProjection.center.x;
+    celLabel.top = SCREEN_VIEW_MARGIN + 14;
+    this.addChild(celLabel);
     this.addChild(this.addSphereInteraction(this.celProjection, (point) => this.celestialPointToEquatorial(point)));
-    this.addChild(new CelestialSphereNode(this.celProjection));
+    this.addChild(celRegions);
+    this.addChild(celSphere);
     this.addChild(new HorizonPlaneNode(this.celProjection, sky.latitudeProperty, sky.siderealTimeProperty));
     this.addChild(new EarthGlobeNode(this.celProjection, sky.latitudeProperty, sky.siderealTimeProperty));
     this.addChild(celStars);
 
-    // ── Horizon dome (right) ────────────────────────────────────────────────────
+    // ── Horizon diagram (right) ─────────────────────────────────────────────────
     this.horProjection = new SkyProjection({
-      center: new Vector2(620, 270),
+      center: new Vector2(615, 205),
       radius: SPHERE_RADIUS,
       elevation: -0.5,
       azimuth: Math.PI / 2,
     });
+
+    const trailsVisibleProperty = new DerivedProperty([sky.starTrailModeProperty], (mode) => mode !== "none");
+    const trailMaxLengthProperty = new DerivedProperty([sky.starTrailModeProperty], (mode) =>
+      mode === "short" ? SHORT_TRAIL_HOURS : LONG_TRAIL_HOURS,
+    );
+
     const horTrails = new SkyTrailsNode(sky, this.horProjection, {
       pathPointAt: (star, lst) => {
         const { altDeg, azDeg } = equatorialToHorizontal(
@@ -103,6 +162,8 @@ export class ExplorerScreenView extends ScreenView {
         return { point: altAzToVector3(altDeg, azDeg), visible: altDeg >= 0 };
       },
       redrawProperties: [sky.latitudeProperty, sky.siderealTimeProperty, this.horProjection.viewMatrixProperty],
+      visibleProperty: trailsVisibleProperty,
+      maxLengthHoursProperty: trailMaxLengthProperty,
     });
     const horStars = new SkyStarsNode(sky, {
       starToPoint: (star) => {
@@ -118,93 +179,253 @@ export class ExplorerScreenView extends ScreenView {
       redrawProperties: [sky.latitudeProperty, sky.siderealTimeProperty, this.horProjection.viewMatrixProperty],
       accessibleName: controls.starStringProperty,
     });
+
+    const horEquator = new CelestialEquatorOnHorizonNode(
+      this.horProjection,
+      sky.latitudeProperty,
+      sky.celestialEquatorVisibleProperty,
+    );
+    horEquator.pickable = false;
+    const horAngle = new EquatorHorizonAngleNode(
+      this.horProjection,
+      sky.latitudeProperty,
+      sky.equatorHorizonAngleVisibleProperty,
+    );
+
+    const horLabel = viewLabel(controls.horizonViewStringProperty);
+    horLabel.centerX = this.horProjection.center.x;
+    horLabel.top = SCREEN_VIEW_MARGIN + 14;
+    this.addChild(horLabel);
     this.addChild(this.addSphereInteraction(this.horProjection, (point) => this.horizonPointToEquatorial(point)));
-    this.addChild(new HorizonDomeNode(this.horProjection, sky.latitudeProperty));
+    this.addChild(
+      new HorizonDomeNode(this.horProjection, sky.latitudeProperty, {
+        undersideVisibleProperty: sky.horizonUndersideVisibleProperty,
+        labelsVisibleProperty: sky.labelsVisibleProperty,
+      }),
+    );
+    this.addChild(horEquator);
+    this.addChild(horAngle);
     this.addChild(horTrails);
     this.addChild(horStars);
 
-    // ── Flat Earth map (lower-left) ─────────────────────────────────────────────
-    const map = new FlatEarthMapNode(sky.latitudeProperty, sky.longitudeProperty, { width: 300, height: 150 });
-    map.left = SCREEN_VIEW_MARGIN;
-    map.bottom = this.layoutBounds.maxY - SCREEN_VIEW_MARGIN;
-    this.addChild(map);
+    // ── Shared control builders ─────────────────────────────────────────────────
+    const panelTitle = (labelProperty: typeof controls.observerLocationStringProperty): Text =>
+      new Text(labelProperty, { font: new PhetFont({ size: 14, weight: "bold" }), fill: textFill });
 
-    // ── Control panel ───────────────────────────────────────────────────────────
-    const pushButton = (
-      labelProperty: typeof controls.addStarRandomlyStringProperty,
-      listener: () => void,
-    ): RectangularPushButton =>
+    const pushButton = (labelProperty: typeof controls.addStarRandomlyStringProperty, listener: () => void) =>
       new RectangularPushButton({
-        content: new Text(labelProperty, { font: new PhetFont(14), fill: "#000000" }),
+        ...FLAT_RECTANGULAR_BUTTON_OPTIONS,
+        content: new Text(labelProperty, { font: new PhetFont(13), fill: BUTTON_TEXT_FILL }),
         listener,
         accessibleName: labelProperty,
       });
 
-    const addStarButton = pushButton(controls.addStarRandomlyStringProperty, () => sky.addRandomStar());
-    const removeAllButton = pushButton(controls.removeAllStarsStringProperty, () => sky.removeAllStars());
+    const numberControl = (
+      labelProperty: typeof controls.latitudeStringProperty,
+      property: typeof sky.latitudeProperty,
+      range: typeof LATITUDE_RANGE,
+    ): NumberControl =>
+      new NumberControl(labelProperty, property, range, {
+        delta: 1,
+        numberDisplayOptions: {
+          decimalPlaces: 0,
+          valuePattern: "{{value}}°",
+          textOptions: { fill: textFill },
+        },
+        titleNodeOptions: { font: new PhetFont(13), fill: textFill, maxWidth: 120 },
+        sliderOptions: { trackFillEnabled: textFill },
+        arrowButtonOptions: FLAT_RECTANGULAR_BUTTON_OPTIONS,
+      });
 
-    const trailsCheckbox = new Checkbox(
-      sky.starTrailsVisibleProperty,
-      new Text(controls.starTrailsStringProperty, {
-        font: new PhetFont(14),
-        fill: RotatingSkyColors.textColorProperty,
+    // ── Observer's Location panel ────────────────────────────────────────────────
+    const map = new FlatEarthMapNode(sky.latitudeProperty, sky.longitudeProperty, { width: 220, height: 110 });
+    const latitudeControl = numberControl(controls.latitudeStringProperty, sky.latitudeProperty, LATITUDE_RANGE);
+    const longitudeControl = numberControl(controls.longitudeStringProperty, sky.longitudeProperty, LONGITUDE_RANGE);
+    const locationPanel = new RotatingSkyPanel(
+      new VBox({
+        align: "center",
+        spacing: 8,
+        children: [panelTitle(controls.observerLocationStringProperty), map, latitudeControl, longitudeControl],
       }),
-      {
-        checkboxColor: RotatingSkyColors.textColorProperty,
-        checkboxColorBackground: RotatingSkyColors.panelBackgroundColorProperty,
-        accessibleName: controls.starTrailsStringProperty,
-      },
     );
 
+    // ── Animation Controls panel ─────────────────────────────────────────────────
     const timeControl = new TimeControlNode(sky.timer.isPlayingProperty, {
-      timeSpeedProperty: sky.timeSpeedProperty,
-      playPauseStepButtonOptions: { stepForwardButtonOptions: { listener: () => sky.stepForward() } },
+      playPauseStepButtonOptions: {
+        ...FLAT_PLAY_PAUSE_STEP_BUTTON_OPTIONS,
+        stepForwardButtonOptions: {
+          ...FLAT_PLAY_PAUSE_STEP_BUTTON_OPTIONS.stepForwardButtonOptions,
+          listener: () => sky.stepForward(),
+        },
+      },
     });
-
-    const locationReadout = new Text(
-      new DerivedProperty(
-        [sky.latitudeProperty, sky.longitudeProperty, controls.latitudeStringProperty],
-        (lat, lon, label) => `${label}: ${lat.toFixed(0)}°, ${lon.toFixed(0)}°`,
-      ),
-      { font: new PhetFont(13), fill: RotatingSkyColors.textColorProperty },
+    const rateSlider = new HSlider(sky.animationRateProperty, ANIMATION_RATE_RANGE, {
+      trackFillEnabled: textFill,
+      accessibleName: controls.animationRateStringProperty,
+    });
+    const endLabel = (labelProperty: typeof controls.slowerStringProperty): Text =>
+      new Text(labelProperty, { font: new PhetFont(11), fill: textFill });
+    const animationPanel = new RotatingSkyPanel(
+      new VBox({
+        align: "center",
+        spacing: 10,
+        children: [
+          panelTitle(controls.animationControlsStringProperty),
+          timeControl,
+          new Text(controls.animationRateStringProperty, { font: new PhetFont(12), fill: textFill }),
+          new HBox({
+            spacing: 6,
+            children: [endLabel(controls.slowerStringProperty), rateSlider, endLabel(controls.fasterStringProperty)],
+          }),
+        ],
+      }),
     );
 
-    const panel = new RotatingSkyPanel(
+    // ── Appearance Settings panel ────────────────────────────────────────────────
+    const checkbox = (
+      property: typeof sky.labelsVisibleProperty,
+      labelProperty: typeof controls.showLabelsStringProperty,
+    ) =>
+      new Checkbox(property, new Text(labelProperty, { font: new PhetFont(12), fill: textFill, maxWidth: 195 }), {
+        checkboxColor: textFill,
+        checkboxColorBackground: RotatingSkyColors.panelBackgroundColorProperty,
+        accessibleName: labelProperty,
+      });
+    const appearanceCheckboxes = [
+      checkbox(sky.labelsVisibleProperty, controls.showLabelsStringProperty),
+      checkbox(sky.hourCircleVisibleProperty, controls.show0hCircleStringProperty),
+      checkbox(sky.celestialEquatorVisibleProperty, controls.showCelestialEquatorStringProperty),
+      checkbox(sky.horizonUndersideVisibleProperty, controls.showUndersideStringProperty),
+      checkbox(sky.neverRiseRegionVisibleProperty, controls.showNeverRiseStringProperty),
+      checkbox(sky.riseSetRegionVisibleProperty, controls.showRiseSetStringProperty),
+      checkbox(sky.circumpolarRegionVisibleProperty, controls.showCircumpolarStringProperty),
+      checkbox(sky.equatorHorizonAngleVisibleProperty, controls.showEquatorHorizonAngleStringProperty),
+    ];
+    const appearancePanel = new RotatingSkyPanel(
       new VBox({
         align: "left",
-        spacing: 12,
+        spacing: 6,
+        children: [panelTitle(controls.appearanceSettingsStringProperty), ...appearanceCheckboxes],
+      }),
+    );
+
+    // ── Star Controls panel ──────────────────────────────────────────────────────
+    const listParent = new Node();
+    const patterns: StarPattern[] = [
+      { key: "bigDipper", nameProperty: controls.patternBigDipperStringProperty, stars: BIG_DIPPER },
+      { key: "orionsBelt", nameProperty: controls.patternOrionsBeltStringProperty, stars: ORIONS_BELT },
+      { key: "southernCross", nameProperty: controls.patternSouthernCrossStringProperty, stars: SOUTHERN_CROSS },
+      { key: "cassiopeia", nameProperty: controls.patternCassiopeiaStringProperty, stars: CASSIOPEIA },
+    ];
+    const patternProperty = new Property<StarPattern | null>(null);
+    // Picking a pattern is an action: drop its stars, then snap back to the prompt.
+    patternProperty.lazyLink((pattern) => {
+      if (pattern) {
+        sky.addPattern(pattern.stars);
+        patternProperty.value = null;
+      }
+    });
+    const patternCombo = new ComboBox<StarPattern | null>(
+      patternProperty,
+      [
+        {
+          value: null,
+          createNode: () =>
+            new Text(controls.starPatternsStringProperty, { font: new PhetFont(13), fill: BUTTON_TEXT_FILL }),
+          accessibleName: controls.starPatternsStringProperty,
+        },
+        ...patterns.map((pattern) => ({
+          value: pattern as StarPattern | null,
+          createNode: () => new Text(pattern.nameProperty, { font: new PhetFont(13), fill: BUTTON_TEXT_FILL }),
+          accessibleName: pattern.nameProperty,
+        })),
+      ],
+      listParent,
+      { listPosition: "above", accessibleName: controls.starPatternsStringProperty },
+    );
+
+    const addStarButton = pushButton(controls.addStarRandomlyStringProperty, () => sky.addRandomStar());
+    const removeAllButton = pushButton(controls.removeAllStarsStringProperty, () => sky.removeAllStars());
+    const resetTrailsButton = pushButton(controls.resetStarTrailsStringProperty, () => sky.resetStarTrails());
+
+    const radioText = (labelProperty: typeof controls.noStarTrailsStringProperty): Text =>
+      new Text(labelProperty, { font: new PhetFont(12), fill: textFill });
+    const trailRadioGroup = new VerticalAquaRadioButtonGroup<StarTrailMode>(
+      sky.starTrailModeProperty,
+      [
+        {
+          value: "none",
+          createNode: () => radioText(controls.noStarTrailsStringProperty),
+          options: { accessibleName: controls.noStarTrailsStringProperty },
+        },
+        {
+          value: "short",
+          createNode: () => radioText(controls.shortStarTrailsStringProperty),
+          options: { accessibleName: controls.shortStarTrailsStringProperty },
+        },
+        {
+          value: "long",
+          createNode: () => radioText(controls.longStarTrailsStringProperty),
+          options: { accessibleName: controls.longStarTrailsStringProperty },
+        },
+      ],
+      { spacing: 5, radioButtonOptions: { radius: 7 } },
+    );
+
+    const starPanel = new RotatingSkyPanel(
+      new VBox({
+        align: "center",
+        spacing: 8,
         children: [
+          panelTitle(controls.starControlsStringProperty),
+          patternCombo,
           addStarButton,
           removeAllButton,
-          trailsCheckbox,
-          timeControl,
-          locationReadout,
+          trailRadioGroup,
+          resetTrailsButton,
           new SkyReadoutNode(sky),
         ],
       }),
     );
-    panel.right = this.layoutBounds.maxX - SCREEN_VIEW_MARGIN;
-    panel.top = this.layoutBounds.minY + SCREEN_VIEW_MARGIN;
-    this.addChild(panel);
+
+    // ── Layout: panels in a bottom row ───────────────────────────────────────────
+    const panelRow = new HBox({
+      align: "top",
+      spacing: 8,
+      children: [locationPanel, animationPanel, appearancePanel, starPanel],
+    });
+    panelRow.left = SCREEN_VIEW_MARGIN;
+    panelRow.bottom = this.layoutBounds.maxY - SCREEN_VIEW_MARGIN;
+    this.addChild(panelRow);
 
     const resetAllButton = new ResetAllButton({
+      ...FLAT_RESET_ALL_BUTTON_OPTIONS,
       listener: () => {
         model.reset();
         this.reset();
       },
       right: this.layoutBounds.maxX - SCREEN_VIEW_MARGIN,
-      bottom: this.layoutBounds.maxY - SCREEN_VIEW_MARGIN,
+      top: this.layoutBounds.minY + SCREEN_VIEW_MARGIN,
     });
     this.addChild(resetAllButton);
+
+    // The combo-box list must float above the panels.
+    this.addChild(listParent);
 
     this.addChild(
       new Node({
         pdomOrder: [
           map,
+          latitudeControl,
+          longitudeControl,
+          timeControl,
+          rateSlider,
+          ...appearanceCheckboxes,
+          patternCombo,
           addStarButton,
           removeAllButton,
-          trailsCheckbox,
-          timeControl,
+          trailRadioGroup,
+          resetTrailsButton,
           celStars,
           horStars,
           resetAllButton,

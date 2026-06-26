@@ -7,7 +7,7 @@
  * (far-side) part dashed.
  */
 
-import { Vector3 } from "scenerystack/dot";
+import { type Vector2, Vector3 } from "scenerystack/dot";
 import { Shape } from "scenerystack/kite";
 import { degToRad } from "../SkyCoordinates.js";
 import type { SkyProjection } from "../SkyProjection.js";
@@ -121,6 +121,62 @@ export const projectMultiPolylineShape = (
     }
   }
   return shape;
+};
+
+/**
+ * Fills a band of constant-declination sky between `decLow` and `decHigh` (all
+ * right ascensions) by tiling it with quads and projecting each. `toVector` maps
+ * (raHours, decDeg) to a world vector, so the same routine fills a band on the
+ * celestial sphere (equatorial frame) or any other frame. Each quad's winding is
+ * normalized so the front and back hemispheres overlap into one uniform fill
+ * (no holes) under the default non-zero fill rule.
+ */
+export const projectDeclinationBand = (
+  projection: SkyProjection,
+  decLow: number,
+  decHigh: number,
+  toVector: (raHours: number, decDeg: number) => Vector3,
+  raSteps = 48,
+): Shape => {
+  const shape = new Shape();
+  const decSteps = Math.max(1, Math.round((decHigh - decLow) / 15));
+  for (let i = 0; i < raSteps; i++) {
+    const ra0 = (i / raSteps) * 24;
+    const ra1 = ((i + 1) / raSteps) * 24;
+    for (let j = 0; j < decSteps; j++) {
+      const d0 = decLow + ((decHigh - decLow) * j) / decSteps;
+      const d1 = decLow + ((decHigh - decLow) * (j + 1)) / decSteps;
+      const quad = [
+        projection.project(toVector(ra0, d0)),
+        projection.project(toVector(ra1, d0)),
+        projection.project(toVector(ra1, d1)),
+        projection.project(toVector(ra0, d1)),
+      ];
+      addNormalizedQuad(shape, quad);
+    }
+  }
+  return shape;
+};
+
+/** Appends a quad to `shape`, normalizing its winding to a consistent orientation. */
+const addNormalizedQuad = (shape: Shape, points: Vector2[]): void => {
+  let area = 0;
+  for (let k = 0; k < points.length; k++) {
+    const a = points[k];
+    const b = points[(k + 1) % points.length];
+    if (a && b) {
+      area += a.x * b.y - b.x * a.y;
+    }
+  }
+  const ordered = area < 0 ? [...points].reverse() : points;
+  ordered.forEach((p, k) => {
+    if (k === 0) {
+      shape.moveToPoint(p);
+    } else {
+      shape.lineToPoint(p);
+    }
+  });
+  shape.close();
 };
 
 /** Projects a polyline into a single closed Shape (no occlusion) for fills. */
