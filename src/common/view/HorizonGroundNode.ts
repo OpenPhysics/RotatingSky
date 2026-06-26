@@ -13,14 +13,14 @@ import { clamp, Vector3 } from "scenerystack/dot";
 import { Node, Path, Text } from "scenerystack/scenery";
 import { PhetFont } from "scenerystack/scenery-phet";
 import RotatingSkyColors from "../../RotatingSkyColors.js";
-import { altAzToVector3 } from "../SkyCoordinates.js";
+import { degToRad } from "../SkyCoordinates.js";
 import type { SkyProjection } from "../SkyProjection.js";
 import { projectFilledShape, projectPolylineShape, smallCirclePoints } from "./skyGraphics.js";
 
 const ZENITH = new Vector3(0, 0, 1);
 
-/** Altitude below the horizon; keeps labels on the grass near the rim. */
-const GROUND_CARDINAL_ALT_DEG = -10;
+/** Where the cardinal labels sit on the flat ground disk, as a fraction of the rim radius (1 = on the horizon). */
+const GROUND_CARDINAL_RADIUS = 0.9;
 /** Azimuth step used to measure the local ground tangent for label rotation. */
 const GROUND_TANGENT_AZ_STEP_DEG = 6;
 
@@ -53,16 +53,17 @@ export class HorizonGroundNode extends Node {
 
     this.children = [groundFill, groundEdge, labels];
 
+    /** Point on the flat ground disk (z = 0) at radius `radius` and azimuth `azDeg`. */
+    const groundPoint = (azDeg: number, radius: number): Vector3 => {
+      const az = degToRad(azDeg);
+      return new Vector3(radius * Math.cos(az), radius * Math.sin(az), 0);
+    };
+
     /** Lay a label flat on the ground disk, tangent to the horizon circle. */
     const placeLabel = (text: Text, azDeg: number): void => {
-      const anchor = altAzToVector3(GROUND_CARDINAL_ALT_DEG, azDeg);
-      if (!projection.isFrontFacing(anchor)) {
-        text.visible = false;
-        return;
-      }
-
+      const anchor = groundPoint(azDeg, GROUND_CARDINAL_RADIUS);
       const screen = projection.project(anchor);
-      const tangentEnd = altAzToVector3(GROUND_CARDINAL_ALT_DEG, azDeg + GROUND_TANGENT_AZ_STEP_DEG);
+      const tangentEnd = groundPoint(azDeg + GROUND_TANGENT_AZ_STEP_DEG, GROUND_CARDINAL_RADIUS);
       const tangent = projection.project(tangentEnd).minus(screen);
 
       if (tangent.magnitude === 0) {
@@ -70,8 +71,9 @@ export class HorizonGroundNode extends Node {
         return;
       }
 
-      // Baseline follows the local eastward rim direction; scale foreshortens back labels.
-      const referenceTangent = (Math.PI / 180) * GROUND_TANGENT_AZ_STEP_DEG * projection.radius;
+      // Baseline follows the local eastward rim direction; scale foreshortens edge-on labels.
+      const referenceTangent =
+        GROUND_CARDINAL_RADIUS * ((Math.PI / 180) * GROUND_TANGENT_AZ_STEP_DEG) * projection.radius;
       text.rotation = Math.atan2(tangent.y, tangent.x);
       text.setScaleMagnitude(clamp(tangent.magnitude / referenceTangent, 0.35, 1));
       text.center = screen;
@@ -83,10 +85,20 @@ export class HorizonGroundNode extends Node {
       groundFill.shape = projectFilledShape(projection, horizon);
       groundEdge.shape = projectPolylineShape(projection, horizon, true);
 
-      placeLabel(northText, 0);
-      placeLabel(eastText, 90);
-      placeLabel(southText, 180);
-      placeLabel(westText, 270);
+      // Labels are painted on the top surface of the opaque grass disk, so they
+      // are all visible whenever that surface faces the viewer (camera above the
+      // horizon) and hidden when looking at the underside.
+      if (projection.isFrontFacing(ZENITH)) {
+        placeLabel(northText, 0);
+        placeLabel(eastText, 90);
+        placeLabel(southText, 180);
+        placeLabel(westText, 270);
+      } else {
+        northText.visible = false;
+        eastText.visible = false;
+        southText.visible = false;
+        westText.visible = false;
+      }
     });
 
     options?.labelsVisibleProperty?.link((visible) => {
