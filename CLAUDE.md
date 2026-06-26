@@ -5,20 +5,14 @@ Sim-specific context for AI assistants. General SceneryStack guidance: [OpenPhys
 ## Project
 
 An interactive astronomy simulation about the apparent rotation of the sky for an
-observer on Earth. Forked from `TemplateSingleSim` via `npm run rename` and then
-extended to three screens (see `doc/multi-screen.md`):
+observer on Earth. Extended to three screens (see `doc/multi-screen.md`):
 
 - **Horizon System** (`src/horizon-system/`) — the local sky from an observer's horizon.
 - **Celestial Sphere** (`src/celestial-sphere/`) — the celestial sphere, equator, ecliptic, poles.
 - **Explorer** (`src/explorer/`) — the combined, interactive rotating-sky explorer.
 
-Status: the astronomy model is implemented. Each screen renders a live sky from a
-`SkyModel` — observer latitude/longitude, local sidereal time (advances while
-playing → diurnal rotation), draggable stars, trails, and display toggles — drawn
-through a shared orthographic `SkyProjection` (drag to rotate). Each per-screen
-model owns its **own** `SkyModel` instance (composition, like `TimeModel`), so the
-three screens stay independent: changing latitude or time on one does not affect the
-others. Reference material for the port lives in the gitignored `NAAP/` directory
+Status: the astronomy model is implemented.
+Reference material for the port lives in the gitignored `NAAP/` directory
 (the original NAAP "Rotating Sky" Flash/AIR lab). The automated gate is
 `npm run check && npm run lint && npm run build` (plus `npm test`).
 
