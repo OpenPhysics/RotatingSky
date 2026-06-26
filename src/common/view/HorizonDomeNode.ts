@@ -4,8 +4,7 @@
  * The observer's local sky drawn as a wireframe dome: the horizon circle,
  * altitude rings, azimuth lines, the meridian, the cardinal points (N/E/S/W),
  * the zenith, and the celestial pole markers (NCP/SCP) whose altitude tracks the
- * observer's latitude. Re-projects whenever the camera (view matrix) moves or
- * the latitude changes.
+ * observer's latitude. Cardinal labels (N/E/S/W) live on {@link HorizonGroundNode}.
  *
  * World frame = horizon frame: +Z zenith, +X north, +Y east.
  */
@@ -45,7 +44,7 @@ const meridianBelowPoints = (): Vector3[] => [...azimuthLinePoints(0, 0, -90), .
 export type HorizonDomeNodeOptions = {
   /** Toggles the below-horizon (underside) wireframe. Defaults to hidden. */
   undersideVisibleProperty?: TReadOnlyProperty<boolean>;
-  /** Toggles the N/E/S/W and NCP/SCP labels. Defaults to always visible. */
+  /** Toggles the NCP/SCP labels. Defaults to always visible. */
   labelsVisibleProperty?: TReadOnlyProperty<boolean>;
 };
 
@@ -59,51 +58,37 @@ export class HorizonDomeNode extends Node {
 
     const ringsPath = new Path(null, {
       stroke: RotatingSkyColors.gridColorProperty,
-      lineWidth: 1,
+      lineWidth: 0.75,
     });
     const linesPath = new Path(null, {
       stroke: RotatingSkyColors.gridColorProperty,
-      lineWidth: 1,
+      lineWidth: 0.75,
     });
     const meridianPath = new Path(null, {
       stroke: RotatingSkyColors.gridColorProperty,
-      lineWidth: 1.5,
-    });
-    const horizonPath = new Path(null, {
-      stroke: RotatingSkyColors.horizonColorProperty,
-      lineWidth: 3,
+      lineWidth: 1,
     });
 
     // Below-horizon wireframe ("underside"), drawn faint and dashed.
     const undersideRings = new Path(null, {
       stroke: RotatingSkyColors.gridColorProperty,
-      lineWidth: 1,
+      lineWidth: 0.75,
       lineDash: [4, 4],
       opacity: 0.5,
     });
     const undersideLines = new Path(null, {
       stroke: RotatingSkyColors.gridColorProperty,
-      lineWidth: 1,
+      lineWidth: 0.75,
       lineDash: [4, 4],
       opacity: 0.5,
     });
     const undersideMeridian = new Path(null, {
       stroke: RotatingSkyColors.gridColorProperty,
-      lineWidth: 1.5,
+      lineWidth: 1,
       lineDash: [4, 4],
       opacity: 0.5,
     });
     const underside = new Node({ children: [undersideRings, undersideLines, undersideMeridian], visible: false });
-
-    const cardinal = (label: string): Text =>
-      new Text(label, {
-        font: new PhetFont({ size: 14, weight: "bold" }),
-        fill: RotatingSkyColors.cardinalLabelColorProperty,
-      });
-    const northText = cardinal("N");
-    const eastText = cardinal("E");
-    const southText = cardinal("S");
-    const westText = cardinal("W");
 
     const poleDot = (): Circle => new Circle(POLE_DOT_RADIUS, { fill: RotatingSkyColors.cardinalLabelColorProperty });
     const ncpDot = poleDot();
@@ -116,9 +101,9 @@ export class HorizonDomeNode extends Node {
     const ncpText = poleLabel("NCP");
     const scpText = poleLabel("SCP");
 
-    const labels = new Node({ children: [northText, eastText, southText, westText, ncpText, scpText] });
+    const labels = new Node({ children: [ncpText, scpText] });
 
-    this.children = [underside, ringsPath, linesPath, meridianPath, horizonPath, ncpDot, scpDot, labels];
+    this.children = [underside, ringsPath, linesPath, meridianPath, ncpDot, scpDot, labels];
 
     // Place a label just outside the sphere center direction of its point.
     const placeLabel = (text: Node, point: Vector3): void => {
@@ -142,7 +127,6 @@ export class HorizonDomeNode extends Node {
       );
 
       meridianPath.shape = projectPolylineShape(projection, meridianPoints(), false);
-      horizonPath.shape = projectPolylineShape(projection, smallCirclePoints(ZENITH, 90), true);
 
       undersideRings.shape = projectMultiPolylineShape(
         projection,
@@ -155,11 +139,6 @@ export class HorizonDomeNode extends Node {
         false,
       );
       undersideMeridian.shape = projectPolylineShape(projection, meridianBelowPoints(), false);
-
-      placeLabel(northText, altAzToVector3(0, 0));
-      placeLabel(eastText, altAzToVector3(0, 90));
-      placeLabel(southText, altAzToVector3(0, 180));
-      placeLabel(westText, altAzToVector3(0, 270));
 
       // Celestial poles: NCP due north at altitude = latitude; SCP is its antipode.
       // Show whichever pole is above the horizon for this observer.

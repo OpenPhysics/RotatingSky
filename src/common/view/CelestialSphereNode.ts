@@ -53,7 +53,7 @@ export class CelestialSphereNode extends Node {
 
     const outline = new Circle(projection.radius, {
       stroke: RotatingSkyColors.sphereOutlineColorProperty,
-      lineWidth: 1.5,
+      lineWidth: 1,
       center: projection.center,
     });
 
@@ -62,16 +62,16 @@ export class CelestialSphereNode extends Node {
     const dashed = (color: typeof RotatingSkyColors.gridColorProperty, lineWidth: number): Path =>
       new Path(null, { stroke: color, lineWidth, lineDash: DASH, opacity: 0.6 });
 
-    const gridFront = solid(RotatingSkyColors.gridColorProperty, 1);
-    const gridBack = dashed(RotatingSkyColors.gridColorProperty, 1);
-    const equatorFront = solid(RotatingSkyColors.celestialEquatorColorProperty, 2.5);
-    const equatorBack = dashed(RotatingSkyColors.celestialEquatorColorProperty, 2.5);
-    const eclipticFront = solid(RotatingSkyColors.eclipticColorProperty, 2);
-    const eclipticBack = dashed(RotatingSkyColors.eclipticColorProperty, 2);
+    const gridFront = solid(RotatingSkyColors.gridColorProperty, 0.75);
+    const gridBack = dashed(RotatingSkyColors.gridColorProperty, 0.75);
+    const equatorFront = solid(RotatingSkyColors.celestialEquatorColorProperty, 1.5);
+    const equatorBack = dashed(RotatingSkyColors.celestialEquatorColorProperty, 1.5);
+    const eclipticFront = solid(RotatingSkyColors.eclipticColorProperty, 1.5);
+    const eclipticBack = dashed(RotatingSkyColors.eclipticColorProperty, 1.5);
 
     // The 0ʰ hour circle is grouped so a single visibility toggle hides it all.
-    const hourCircleFront = solid(RotatingSkyColors.accentColorProperty, 2);
-    const hourCircleBack = dashed(RotatingSkyColors.accentColorProperty, 2);
+    const hourCircleFront = solid(RotatingSkyColors.accentColorProperty, 1.5);
+    const hourCircleBack = dashed(RotatingSkyColors.accentColorProperty, 1.5);
     const hourCircleLabel = new Text("0ʰ", { font: new PhetFont(12), fill: RotatingSkyColors.accentColorProperty });
     const hourCircle = new Node({ children: [hourCircleBack, hourCircleFront, hourCircleLabel] });
 

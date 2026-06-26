@@ -37,6 +37,11 @@ import {
   LIGHT_SURFACE_TEXT_FILL,
   ROTATING_SKY_COMBO_BOX_OPTIONS,
 } from "../../common/RotatingSkyButtonOptions.js";
+import {
+  ROTATING_SKY_CHECKBOX_OPTIONS,
+  ROTATING_SKY_NUMBER_CONTROL_OPTIONS,
+  ROTATING_SKY_SLIDER_OPTIONS,
+} from "../../common/RotatingSkyControlOptions.js";
 import { RotatingSkyPanel } from "../../common/RotatingSkyPanel.js";
 import {
   altAzToVector3,
@@ -56,6 +61,8 @@ import { EarthGlobeNode } from "../../common/view/EarthGlobeNode.js";
 import { EquatorHorizonAngleNode } from "../../common/view/EquatorHorizonAngleNode.js";
 import { FlatEarthMapNode } from "../../common/view/FlatEarthMapNode.js";
 import { HorizonDomeNode } from "../../common/view/HorizonDomeNode.js";
+import { HorizonGroundNode } from "../../common/view/HorizonGroundNode.js";
+import { HorizonObserverNode } from "../../common/view/HorizonObserverNode.js";
 import { HorizonPlaneNode } from "../../common/view/HorizonPlaneNode.js";
 import { SkyReadoutNode } from "../../common/view/SkyReadoutNode.js";
 import { SkyStarsNode } from "../../common/view/SkyStarsNode.js";
@@ -64,9 +71,12 @@ import { StringManager } from "../../i18n/StringManager.js";
 import RotatingSkyColors from "../../RotatingSkyColors.js";
 import {
   ANIMATION_RATE_RANGE,
+  CONTROL_FONT_SIZE,
   LATITUDE_RANGE,
   LONG_TRAIL_HOURS,
   LONGITUDE_RANGE,
+  PANEL_CONTENT_SPACING,
+  PANEL_TITLE_FONT_SIZE,
   SCREEN_VIEW_MARGIN,
   SHORT_TRAIL_HOURS,
 } from "../../RotatingSkyConstants.js";
@@ -214,12 +224,14 @@ export class ExplorerScreenView extends ScreenView {
     this.addChild(horLabel);
     this.addChild(this.addSphereInteraction(this.horProjection, (point) => this.horizonPointToEquatorial(point)));
     this.addChild(horRegions);
+    this.addChild(new HorizonGroundNode(this.horProjection, { labelsVisibleProperty: sky.labelsVisibleProperty }));
     this.addChild(
       new HorizonDomeNode(this.horProjection, sky.latitudeProperty, {
         undersideVisibleProperty: sky.horizonUndersideVisibleProperty,
         labelsVisibleProperty: sky.labelsVisibleProperty,
       }),
     );
+    this.addChild(new HorizonObserverNode(this.horProjection));
     this.addChild(horEquator);
     this.addChild(horAngle);
     this.addChild(horTrails);
@@ -227,12 +239,15 @@ export class ExplorerScreenView extends ScreenView {
 
     // ── Shared control builders ─────────────────────────────────────────────────
     const panelTitle = (labelProperty: typeof controls.observerLocationStringProperty): Text =>
-      new Text(labelProperty, { font: new PhetFont({ size: 14, weight: "bold" }), fill: textFill });
+      new Text(labelProperty, {
+        font: new PhetFont({ size: PANEL_TITLE_FONT_SIZE, weight: "bold" }),
+        fill: textFill,
+      });
 
     const pushButton = (labelProperty: typeof controls.addStarRandomlyStringProperty, listener: () => void) =>
       new RectangularPushButton({
         ...FLAT_RECTANGULAR_BUTTON_OPTIONS,
-        content: new Text(labelProperty, { font: new PhetFont(13), fill: LIGHT_SURFACE_TEXT_FILL }),
+        content: new Text(labelProperty, { font: new PhetFont(CONTROL_FONT_SIZE), fill: LIGHT_SURFACE_TEXT_FILL }),
         listener,
         accessibleName: labelProperty,
       });
@@ -243,14 +258,13 @@ export class ExplorerScreenView extends ScreenView {
       range: typeof LATITUDE_RANGE,
     ): NumberControl =>
       new NumberControl(labelProperty, property, range, {
+        ...ROTATING_SKY_NUMBER_CONTROL_OPTIONS,
         delta: 1,
         numberDisplayOptions: {
           decimalPlaces: 0,
           valuePattern: "{{value}}°",
         },
-        titleNodeOptions: { font: new PhetFont(13), fill: textFill, maxWidth: 120 },
-        sliderOptions: { trackFillEnabled: textFill },
-        arrowButtonOptions: FLAT_RECTANGULAR_BUTTON_OPTIONS,
+        titleNodeOptions: { font: new PhetFont(CONTROL_FONT_SIZE), fill: textFill, maxWidth: 110 },
       });
 
     // ── Observer's Location panel ────────────────────────────────────────────────
@@ -260,7 +274,7 @@ export class ExplorerScreenView extends ScreenView {
     const locationPanel = new RotatingSkyPanel(
       new VBox({
         align: "center",
-        spacing: 8,
+        spacing: PANEL_CONTENT_SPACING,
         children: [panelTitle(controls.observerLocationStringProperty), map, latitudeControl, longitudeControl],
       }),
     );
@@ -279,11 +293,11 @@ export class ExplorerScreenView extends ScreenView {
       },
     });
     const rateSlider = new HSlider(sky.animationRateProperty, ANIMATION_RATE_RANGE, {
-      trackFillEnabled: textFill,
+      ...ROTATING_SKY_SLIDER_OPTIONS,
       accessibleName: controls.animationRateStringProperty,
     });
     const endLabel = (labelProperty: typeof controls.slowerStringProperty): Text =>
-      new Text(labelProperty, { font: new PhetFont(11), fill: textFill });
+      new Text(labelProperty, { font: new PhetFont(CONTROL_FONT_SIZE - 1), fill: textFill });
     const animationDurationChoices: {
       duration: AnimationDuration;
       labelProperty: typeof controls.animationTimeContinuousStringProperty;
@@ -299,7 +313,8 @@ export class ExplorerScreenView extends ScreenView {
       sky.animationDurationProperty,
       animationDurationChoices.map(({ duration, labelProperty }) => ({
         value: duration,
-        createNode: () => new Text(labelProperty, { font: new PhetFont(12), fill: LIGHT_SURFACE_TEXT_FILL }),
+        createNode: () =>
+          new Text(labelProperty, { font: new PhetFont(CONTROL_FONT_SIZE), fill: LIGHT_SURFACE_TEXT_FILL }),
         accessibleName: labelProperty,
       })),
       listParent,
@@ -312,13 +327,13 @@ export class ExplorerScreenView extends ScreenView {
     const animationPanel = new RotatingSkyPanel(
       new VBox({
         align: "center",
-        spacing: 10,
+        spacing: PANEL_CONTENT_SPACING,
         children: [
           panelTitle(controls.animationControlsStringProperty),
           timeControl,
-          new Text(controls.animationTimeStringProperty, { font: new PhetFont(12), fill: textFill }),
+          new Text(controls.animationTimeStringProperty, { font: new PhetFont(CONTROL_FONT_SIZE), fill: textFill }),
           durationCombo,
-          new Text(controls.animationRateStringProperty, { font: new PhetFont(12), fill: textFill }),
+          new Text(controls.animationRateStringProperty, { font: new PhetFont(CONTROL_FONT_SIZE), fill: textFill }),
           new HBox({
             spacing: 6,
             children: [endLabel(controls.slowerStringProperty), rateSlider, endLabel(controls.fasterStringProperty)],
@@ -332,11 +347,14 @@ export class ExplorerScreenView extends ScreenView {
       property: typeof sky.labelsVisibleProperty,
       labelProperty: typeof controls.showLabelsStringProperty,
     ) =>
-      new Checkbox(property, new Text(labelProperty, { font: new PhetFont(12), fill: textFill, maxWidth: 195 }), {
-        checkboxColor: textFill,
-        checkboxColorBackground: RotatingSkyColors.panelBackgroundColorProperty,
-        accessibleName: labelProperty,
-      });
+      new Checkbox(
+        property,
+        new Text(labelProperty, { font: new PhetFont(CONTROL_FONT_SIZE), fill: textFill, maxWidth: 175 }),
+        {
+          ...ROTATING_SKY_CHECKBOX_OPTIONS,
+          accessibleName: labelProperty,
+        },
+      );
     const appearanceCheckboxes = [
       checkbox(sky.labelsVisibleProperty, controls.showLabelsStringProperty),
       checkbox(sky.hourCircleVisibleProperty, controls.show0hCircleStringProperty),
@@ -350,7 +368,7 @@ export class ExplorerScreenView extends ScreenView {
     const appearancePanel = new RotatingSkyPanel(
       new VBox({
         align: "left",
-        spacing: 6,
+        spacing: 5,
         children: [panelTitle(controls.appearanceSettingsStringProperty), ...appearanceCheckboxes],
       }),
     );
@@ -362,8 +380,9 @@ export class ExplorerScreenView extends ScreenView {
       { key: "southernCross", nameProperty: controls.patternSouthernCrossStringProperty, stars: SOUTHERN_CROSS },
       { key: "cassiopeia", nameProperty: controls.patternCassiopeiaStringProperty, stars: CASSIOPEIA },
     ];
-    const patternProperty = new Property<StarPattern | null>(null);
-    // Picking a pattern is an action: drop its stars, then snap back to the prompt.
+    // Action-style picker: selecting a pattern adds stars, then snaps back to the prompt.
+    // reentrant allows resetting value from within the selection listener.
+    const patternProperty = new Property<StarPattern | null>(null, { reentrant: true });
     patternProperty.lazyLink((pattern) => {
       if (pattern) {
         sky.addPattern(pattern.stars);
@@ -376,12 +395,16 @@ export class ExplorerScreenView extends ScreenView {
         {
           value: null,
           createNode: () =>
-            new Text(controls.starPatternsStringProperty, { font: new PhetFont(13), fill: LIGHT_SURFACE_TEXT_FILL }),
+            new Text(controls.starPatternsStringProperty, {
+              font: new PhetFont(CONTROL_FONT_SIZE),
+              fill: LIGHT_SURFACE_TEXT_FILL,
+            }),
           accessibleName: controls.starPatternsStringProperty,
         },
         ...patterns.map((pattern) => ({
           value: pattern as StarPattern | null,
-          createNode: () => new Text(pattern.nameProperty, { font: new PhetFont(13), fill: LIGHT_SURFACE_TEXT_FILL }),
+          createNode: () =>
+            new Text(pattern.nameProperty, { font: new PhetFont(CONTROL_FONT_SIZE), fill: LIGHT_SURFACE_TEXT_FILL }),
           accessibleName: pattern.nameProperty,
         })),
       ],
@@ -398,7 +421,7 @@ export class ExplorerScreenView extends ScreenView {
     const resetTrailsButton = pushButton(controls.resetStarTrailsStringProperty, () => sky.resetStarTrails());
 
     const radioText = (labelProperty: typeof controls.noStarTrailsStringProperty): Text =>
-      new Text(labelProperty, { font: new PhetFont(12), fill: textFill });
+      new Text(labelProperty, { font: new PhetFont(CONTROL_FONT_SIZE), fill: textFill });
     const trailRadioGroup = new VerticalAquaRadioButtonGroup<StarTrailMode>(
       sky.starTrailModeProperty,
       [
@@ -418,13 +441,13 @@ export class ExplorerScreenView extends ScreenView {
           options: { accessibleName: controls.longStarTrailsStringProperty },
         },
       ],
-      { spacing: 5, radioButtonOptions: { radius: 7 } },
+      { spacing: 4, radioButtonOptions: { radius: 6 } },
     );
 
     const starPanel = new RotatingSkyPanel(
       new VBox({
         align: "center",
-        spacing: 8,
+        spacing: PANEL_CONTENT_SPACING,
         children: [
           panelTitle(controls.starControlsStringProperty),
           patternCombo,

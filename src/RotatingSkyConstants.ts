@@ -17,7 +17,7 @@
  * Remove the example constants below and replace them with the sim's own.
  */
 
-import { Range } from "scenerystack/dot";
+import { Dimension2, Range } from "scenerystack/dot";
 import { HOURS_PER_DAY } from "./common/SkyCoordinates.js";
 import RotatingSkyNamespace from "./RotatingSkyNamespace.js";
 
@@ -28,6 +28,33 @@ export const SCREEN_VIEW_MARGIN = 20;
 
 /** Corner radius shared by control panels and dialogs. */
 export const PANEL_CORNER_RADIUS = 6;
+
+/** Horizontal padding inside control panels. */
+export const PANEL_X_MARGIN = 8;
+
+/** Vertical padding inside control panels. */
+export const PANEL_Y_MARGIN = 7;
+
+/** Default font size (px) for labels on panel controls. */
+export const CONTROL_FONT_SIZE = 12;
+
+/** Font size (px) for bold panel section titles. */
+export const PANEL_TITLE_FONT_SIZE = 12;
+
+/** Side length (px) of checkbox boxes in control panels. */
+export const CHECKBOX_BOX_WIDTH = 16;
+
+/** Default vertical spacing between children inside a panel VBox. */
+export const PANEL_CONTENT_SPACING = 8;
+
+/** Track size for standalone panel sliders (e.g. animation-rate). */
+export const STANDALONE_SLIDER_TRACK_SIZE = new Dimension2(75, 4);
+
+/** Track size for NumberControl sliders. */
+export const NUMBER_CONTROL_SLIDER_TRACK_SIZE = new Dimension2(140, 3);
+
+/** Thumb size shared by panel sliders and NumberControl sliders. */
+export const SLIDER_THUMB_SIZE = new Dimension2(13, 26);
 
 /** Default screen-space radius of a projected sky sphere / dome. */
 export const SPHERE_RADIUS = 170;
@@ -80,6 +107,15 @@ export const STAR_RADIUS = 5;
 RotatingSkyNamespace.register("RotatingSkyConstants", {
   SCREEN_VIEW_MARGIN,
   PANEL_CORNER_RADIUS,
+  PANEL_X_MARGIN,
+  PANEL_Y_MARGIN,
+  CONTROL_FONT_SIZE,
+  PANEL_TITLE_FONT_SIZE,
+  CHECKBOX_BOX_WIDTH,
+  PANEL_CONTENT_SPACING,
+  STANDALONE_SLIDER_TRACK_SIZE,
+  NUMBER_CONTROL_SLIDER_TRACK_SIZE,
+  SLIDER_THUMB_SIZE,
   SPHERE_RADIUS,
   DEFAULT_LATITUDE,
   DEFAULT_LONGITUDE,

@@ -18,6 +18,10 @@ import {
   FLAT_RESET_ALL_BUTTON_OPTIONS,
   TIME_CONTROL_SPEED_RADIO_OPTIONS,
 } from "../../common/RotatingSkyButtonOptions.js";
+import {
+  ROTATING_SKY_CHECKBOX_OPTIONS,
+  ROTATING_SKY_NUMBER_CONTROL_OPTIONS,
+} from "../../common/RotatingSkyControlOptions.js";
 import { RotatingSkyPanel } from "../../common/RotatingSkyPanel.js";
 import {
   altAzToVector3,
@@ -28,13 +32,21 @@ import {
 } from "../../common/SkyCoordinates.js";
 import { SkyProjection } from "../../common/SkyProjection.js";
 import { HorizonDomeNode } from "../../common/view/HorizonDomeNode.js";
+import { HorizonGroundNode } from "../../common/view/HorizonGroundNode.js";
+import { HorizonObserverNode } from "../../common/view/HorizonObserverNode.js";
 import { SkyBandsNode } from "../../common/view/SkyBandsNode.js";
 import { SkyReadoutNode } from "../../common/view/SkyReadoutNode.js";
 import { SkyStarsNode } from "../../common/view/SkyStarsNode.js";
 import { SkyTrailsNode } from "../../common/view/SkyTrailsNode.js";
 import { StringManager } from "../../i18n/StringManager.js";
 import RotatingSkyColors from "../../RotatingSkyColors.js";
-import { LATITUDE_RANGE, SCREEN_VIEW_MARGIN, SPHERE_RADIUS } from "../../RotatingSkyConstants.js";
+import {
+  CONTROL_FONT_SIZE,
+  LATITUDE_RANGE,
+  PANEL_CONTENT_SPACING,
+  SCREEN_VIEW_MARGIN,
+  SPHERE_RADIUS,
+} from "../../RotatingSkyConstants.js";
 import type { HorizonSystemModel } from "../model/HorizonSystemModel.js";
 import { HorizonSystemScreenSummaryContent } from "./HorizonSystemScreenSummaryContent.js";
 
@@ -103,7 +115,9 @@ export class HorizonSystemScreenView extends ScreenView {
     });
 
     this.addChild(bandsNode);
+    this.addChild(new HorizonGroundNode(this.projection));
     this.addChild(domeNode);
+    this.addChild(new HorizonObserverNode(this.projection));
     this.addChild(trailsNode);
     this.addChild(starsNode);
 
@@ -129,14 +143,17 @@ export class HorizonSystemScreenView extends ScreenView {
 
     // ── Control panel ───────────────────────────────────────────────────────────
     const latitudeControl = new NumberControl(controls.latitudeStringProperty, sky.latitudeProperty, LATITUDE_RANGE, {
+      ...ROTATING_SKY_NUMBER_CONTROL_OPTIONS,
       delta: 1,
       numberDisplayOptions: {
         decimalPlaces: 0,
         valuePattern: "{{value}}°",
       },
-      titleNodeOptions: { font: new PhetFont(14), fill: RotatingSkyColors.textColorProperty, maxWidth: 180 },
-      sliderOptions: { trackFillEnabled: RotatingSkyColors.textColorProperty },
-      arrowButtonOptions: FLAT_RECTANGULAR_BUTTON_OPTIONS,
+      titleNodeOptions: {
+        font: new PhetFont(CONTROL_FONT_SIZE),
+        fill: RotatingSkyColors.textColorProperty,
+        maxWidth: 160,
+      },
     });
 
     const pushButton = (
@@ -145,7 +162,7 @@ export class HorizonSystemScreenView extends ScreenView {
     ): RectangularPushButton =>
       new RectangularPushButton({
         ...FLAT_RECTANGULAR_BUTTON_OPTIONS,
-        content: new Text(labelProperty, { font: new PhetFont(14), fill: "#000000" }),
+        content: new Text(labelProperty, { font: new PhetFont(CONTROL_FONT_SIZE), fill: "#000000" }),
         listener,
         accessibleName: labelProperty,
       });
@@ -172,10 +189,9 @@ export class HorizonSystemScreenView extends ScreenView {
     ): Checkbox =>
       new Checkbox(
         property,
-        new Text(labelProperty, { font: new PhetFont(14), fill: RotatingSkyColors.textColorProperty }),
+        new Text(labelProperty, { font: new PhetFont(CONTROL_FONT_SIZE), fill: RotatingSkyColors.textColorProperty }),
         {
-          checkboxColor: RotatingSkyColors.textColorProperty,
-          checkboxColorBackground: RotatingSkyColors.panelBackgroundColorProperty,
+          ...ROTATING_SKY_CHECKBOX_OPTIONS,
           accessibleName: labelProperty,
         },
       );
@@ -188,7 +204,7 @@ export class HorizonSystemScreenView extends ScreenView {
     const panel = new RotatingSkyPanel(
       new VBox({
         align: "left",
-        spacing: 12,
+        spacing: PANEL_CONTENT_SPACING,
         children: [
           latitudeControl,
           addStarButton,

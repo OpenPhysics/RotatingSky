@@ -26,11 +26,11 @@ export class CelestialEquatorOnHorizonNode extends Node {
 
     const back = new Path(null, {
       stroke: RotatingSkyColors.celestialEquatorColorProperty,
-      lineWidth: 2.5,
+      lineWidth: 1.5,
       lineDash: [5, 4],
       opacity: 0.6,
     });
-    const front = new Path(null, { stroke: RotatingSkyColors.celestialEquatorColorProperty, lineWidth: 2.5 });
+    const front = new Path(null, { stroke: RotatingSkyColors.celestialEquatorColorProperty, lineWidth: 1.5 });
     this.children = [back, front];
 
     Multilink.multilink([projection.viewMatrixProperty, latitudeProperty], (_matrix, latitude) => {

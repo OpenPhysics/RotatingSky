@@ -11,6 +11,7 @@ import { Text, VBox } from "scenerystack/scenery";
 import { PhetFont } from "scenerystack/scenery-phet";
 import { StringManager } from "../../i18n/StringManager.js";
 import RotatingSkyColors from "../../RotatingSkyColors.js";
+import { CONTROL_FONT_SIZE, PANEL_TITLE_FONT_SIZE } from "../../RotatingSkyConstants.js";
 import type { SkyModel } from "../model/SkyModel.js";
 
 /** Formats RA hours as `h m` (e.g. 6.5 → "6h 30m"). */
@@ -30,11 +31,11 @@ export class SkyReadoutNode extends VBox {
     const controls = StringManager.getInstance().getControls();
 
     const title = new Text(controls.selectedStarStringProperty, {
-      font: new PhetFont({ size: 14, weight: "bold" }),
+      font: new PhetFont({ size: PANEL_TITLE_FONT_SIZE, weight: "bold" }),
       fill: RotatingSkyColors.textColorProperty,
     });
-    const raText = new Text("", { font: new PhetFont(13), fill: RotatingSkyColors.textColorProperty });
-    const decText = new Text("", { font: new PhetFont(13), fill: RotatingSkyColors.textColorProperty });
+    const raText = new Text("", { font: new PhetFont(CONTROL_FONT_SIZE), fill: RotatingSkyColors.textColorProperty });
+    const decText = new Text("", { font: new PhetFont(CONTROL_FONT_SIZE), fill: RotatingSkyColors.textColorProperty });
 
     super({ align: "left", spacing: 4, children: [title, raText, decText] });
 

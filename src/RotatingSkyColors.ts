@@ -104,10 +104,10 @@ const RotatingSkyColors = {
     projector: "#2e7d32",
   }),
 
-  /** Ground fill below the horizon on the horizon dome. */
+  /** Ground fill below the horizon on the horizon dome. Matches NAAP bright green. */
   groundColorProperty: new ProfileColorProperty(RotatingSkyNamespace, "ground", {
-    default: "#24341f",
-    projector: "#cfe8c5",
+    default: "#009900",
+    projector: "#66bb6a",
   }),
 
   /** Cardinal-direction and pole labels (N, E, S, W, NCP, …). */
@@ -164,10 +164,16 @@ const RotatingSkyColors = {
     projector: "#4a90c2",
   }),
 
-  /** The observer's location marker. */
+  /** The observer's location marker on the Earth globe / flat map. */
   observerColorProperty: new ProfileColorProperty(RotatingSkyNamespace, "observer", {
     default: "#ff5252",
     projector: "#c62828",
+  }),
+
+  /** The observer stick figure on the horizon ground disk. */
+  observerFigureColorProperty: new ProfileColorProperty(RotatingSkyNamespace, "observerFigure", {
+    default: "#1a1a1a",
+    projector: "#1a1a1a",
   }),
 };
 

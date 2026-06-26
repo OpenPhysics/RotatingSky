@@ -23,11 +23,11 @@ export class HorizonPlaneNode extends Node {
 
     const back = new Path(null, {
       stroke: RotatingSkyColors.horizonColorProperty,
-      lineWidth: 2.5,
+      lineWidth: 1,
       lineDash: [5, 4],
       opacity: 0.6,
     });
-    const front = new Path(null, { stroke: RotatingSkyColors.horizonColorProperty, lineWidth: 2.5 });
+    const front = new Path(null, { stroke: RotatingSkyColors.horizonColorProperty, lineWidth: 1 });
     const zenithDot = new Circle(4, { fill: RotatingSkyColors.horizonColorProperty });
 
     this.children = [back, front, zenithDot];

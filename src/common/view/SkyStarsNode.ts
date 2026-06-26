@@ -15,11 +15,12 @@
 
 import { Multilink, type TReadOnlyProperty, type UnknownMultilink } from "scenerystack/axon";
 import type { Vector2 } from "scenerystack/dot";
-import { Circle, DragListener, Node } from "scenerystack/scenery";
+import { DragListener, Node, Path } from "scenerystack/scenery";
 import RotatingSkyColors from "../../RotatingSkyColors.js";
 import { STAR_RADIUS } from "../../RotatingSkyConstants.js";
 import type { SkyModel } from "../model/SkyModel.js";
 import type { Star } from "../model/Star.js";
+import { createStarShape } from "./starGraphics.js";
 
 export type SkyStarsNodeOptions = {
   /** Where to draw `star` on this sphere, and whether it is currently visible. */
@@ -33,7 +34,7 @@ export type SkyStarsNodeOptions = {
 };
 
 export class SkyStarsNode extends Node {
-  private readonly dots = new Map<Star, { dot: Circle; multilink: UnknownMultilink }>();
+  private readonly dots = new Map<Star, { dot: Path; multilink: UnknownMultilink }>();
   private readonly model: SkyModel;
   private readonly options: SkyStarsNodeOptions;
 
@@ -50,7 +51,7 @@ export class SkyStarsNode extends Node {
   }
 
   private addStar(star: Star): void {
-    const dot = new Circle(STAR_RADIUS, {
+    const dot = new Path(createStarShape(STAR_RADIUS), {
       cursor: this.options.pointToEquatorial ? "pointer" : "default",
       tagName: "div",
       focusable: true,
@@ -82,14 +83,14 @@ export class SkyStarsNode extends Node {
     this.addChild(dot);
   }
 
-  private updateStar(star: Star, dot: Circle): void {
+  private updateStar(star: Star, dot: Path): void {
     const { point, visible } = this.options.starToPoint(star);
     dot.center = point;
     dot.visible = visible;
     const selected = this.model.selectedStarProperty.value === star;
     dot.fill = selected ? RotatingSkyColors.selectedStarColorProperty : RotatingSkyColors.starColorProperty;
     dot.stroke = selected ? RotatingSkyColors.cardinalLabelColorProperty : null;
-    dot.lineWidth = 1.5;
+    dot.lineWidth = 1;
   }
 
   private removeStar(star: Star): void {

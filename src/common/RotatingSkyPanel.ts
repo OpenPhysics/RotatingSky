@@ -29,7 +29,7 @@ import type { Node } from "scenerystack/scenery";
 import type { PanelOptions } from "scenerystack/sun";
 import { Panel } from "scenerystack/sun";
 import RotatingSkyColors from "../RotatingSkyColors.js";
-import { PANEL_CORNER_RADIUS } from "../RotatingSkyConstants.js";
+import { PANEL_CORNER_RADIUS, PANEL_X_MARGIN, PANEL_Y_MARGIN } from "../RotatingSkyConstants.js";
 
 export class RotatingSkyPanel extends Panel {
   public constructor(content: Node, providedOptions?: PanelOptions) {
@@ -37,8 +37,8 @@ export class RotatingSkyPanel extends Panel {
       fill: RotatingSkyColors.panelBackgroundColorProperty,
       stroke: RotatingSkyColors.panelBorderColorProperty,
       cornerRadius: PANEL_CORNER_RADIUS,
-      xMargin: 12,
-      yMargin: 10,
+      xMargin: PANEL_X_MARGIN,
+      yMargin: PANEL_Y_MARGIN,
       ...providedOptions,
     });
   }

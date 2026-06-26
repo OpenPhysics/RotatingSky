@@ -30,7 +30,12 @@ import { HorizonPlaneNode } from "../../common/view/HorizonPlaneNode.js";
 import { SkyStarsNode } from "../../common/view/SkyStarsNode.js";
 import { StringManager } from "../../i18n/StringManager.js";
 import RotatingSkyColors from "../../RotatingSkyColors.js";
-import { SCREEN_VIEW_MARGIN, SPHERE_RADIUS } from "../../RotatingSkyConstants.js";
+import {
+  CONTROL_FONT_SIZE,
+  PANEL_CONTENT_SPACING,
+  SCREEN_VIEW_MARGIN,
+  SPHERE_RADIUS,
+} from "../../RotatingSkyConstants.js";
 import type { CelestialSphereModel } from "../model/CelestialSphereModel.js";
 import { CelestialSphereScreenSummaryContent } from "./CelestialSphereScreenSummaryContent.js";
 
@@ -134,7 +139,7 @@ export class CelestialSphereScreenView extends ScreenView {
     );
     const viewButton = new RectangularPushButton({
       ...FLAT_RECTANGULAR_BUTTON_OPTIONS,
-      content: new Text(viewButtonLabel, { font: new PhetFont(14), fill: "#000000" }),
+      content: new Text(viewButtonLabel, { font: new PhetFont(CONTROL_FONT_SIZE), fill: "#000000" }),
       listener: () => morphTo(model.systemBlendProperty.value < 0.5 ? 1 : 0),
       accessibleName: viewButtonLabel,
     });
@@ -151,7 +156,9 @@ export class CelestialSphereScreenView extends ScreenView {
       },
     });
 
-    const panel = new RotatingSkyPanel(new VBox({ align: "left", spacing: 14, children: [viewButton, timeControl] }));
+    const panel = new RotatingSkyPanel(
+      new VBox({ align: "left", spacing: PANEL_CONTENT_SPACING, children: [viewButton, timeControl] }),
+    );
     panel.right = this.layoutBounds.maxX - SCREEN_VIEW_MARGIN;
     panel.top = this.layoutBounds.minY + SCREEN_VIEW_MARGIN;
     this.addChild(panel);
