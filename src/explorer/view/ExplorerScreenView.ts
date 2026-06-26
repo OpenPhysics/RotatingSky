@@ -15,7 +15,7 @@
  * added on either sphere appears on both, and every toggle drives both views.
  */
 
-import { DerivedProperty, Property } from "scenerystack/axon";
+import { DerivedProperty, Property, type TReadOnlyProperty } from "scenerystack/axon";
 import { clamp, Vector2 } from "scenerystack/dot";
 import { DragListener, HBox, Node, Rectangle, Text, VBox } from "scenerystack/scenery";
 import { NumberControl, PhetFont, ResetAllButton, TimeControlNode } from "scenerystack/scenery-phet";
@@ -50,6 +50,7 @@ import { RotatingSkyPanel } from "../../common/RotatingSkyPanel.js";
 import {
   altAzToVector3,
   equatorialToHorizontal,
+  HOURS_PER_DAY,
   horizontalToEquatorial,
   normalizeDegrees,
   normalizeHours,
@@ -99,6 +100,14 @@ export class ExplorerScreenView extends ScreenView {
   private readonly celProjection: SkyProjection;
   private readonly horProjection: SkyProjection;
 
+  /**
+   * The observer's *local* sidereal time = reference sidereal time + longitude. Driving every
+   * observer-relative diagram (horizon plane, globe dot, horizon-dome stars/trails/arcs, the
+   * alt/az readout) from this is what wires the longitude control to both views: moving the
+   * observer east/west rotates their local sky relative to the fixed celestial sphere.
+   */
+  private readonly localSiderealTimeProperty: TReadOnlyProperty<number>;
+
   public constructor(model: ExplorerModel, options?: ScreenViewOptions) {
     super({
       screenSummaryContent: new ExplorerScreenSummaryContent(model),
@@ -107,6 +116,11 @@ export class ExplorerScreenView extends ScreenView {
 
     const sky = model.sky;
     this.sky = sky;
+    const localSiderealTimeProperty = new DerivedProperty(
+      [sky.siderealTimeProperty, sky.longitudeProperty],
+      (siderealTime, longitude) => normalizeHours(siderealTime + (longitude / 360) * HOURS_PER_DAY),
+    );
+    this.localSiderealTimeProperty = localSiderealTimeProperty;
     const controls = StringManager.getInstance().getControls();
     const textFill = RotatingSkyColors.textColorProperty;
 
@@ -161,8 +175,10 @@ export class ExplorerScreenView extends ScreenView {
     this.addChild(this.addSphereInteraction(this.celProjection, (point) => this.celestialPointToEquatorial(point)));
     this.addChild(celRegions);
     this.addChild(celSphere);
-    this.addChild(new HorizonPlaneNode(this.celProjection, sky.latitudeProperty, sky.siderealTimeProperty));
-    this.addChild(new EarthGlobeNode(this.celProjection, sky.latitudeProperty, sky.siderealTimeProperty));
+    this.addChild(new HorizonPlaneNode(this.celProjection, sky.latitudeProperty, localSiderealTimeProperty));
+    this.addChild(
+      new EarthGlobeNode(this.celProjection, sky.latitudeProperty, sky.longitudeProperty, localSiderealTimeProperty),
+    );
     this.addChild(celPatternLines);
     this.addChild(celStars);
 
@@ -184,16 +200,19 @@ export class ExplorerScreenView extends ScreenView {
     );
 
     const horTrails = new SkyTrailsNode(sky, this.horProjection, {
-      pathPointAt: (star, lst) => {
+      // The trail samples reference sidereal time historically, so offset each sample by the
+      // observer's longitude to get the local sidereal time the star's alt/az is computed from.
+      pathPointAt: (star, siderealTime) => {
+        const localSiderealTime = siderealTime + (sky.longitudeProperty.value / 360) * HOURS_PER_DAY;
         const { altDeg, azDeg } = equatorialToHorizontal(
           star.raProperty.value,
           star.decProperty.value,
           sky.latitudeProperty.value,
-          lst,
+          localSiderealTime,
         );
         return { point: altAzToVector3(altDeg, azDeg), visible: altDeg >= 0 };
       },
-      redrawProperties: [sky.latitudeProperty, sky.siderealTimeProperty, this.horProjection.viewMatrixProperty],
+      redrawProperties: [sky.latitudeProperty, localSiderealTimeProperty, this.horProjection.viewMatrixProperty],
       visibleProperty: trailsVisibleProperty,
       maxLengthHoursProperty: trailMaxLengthProperty,
     });
@@ -203,11 +222,11 @@ export class ExplorerScreenView extends ScreenView {
           star.raProperty.value,
           star.decProperty.value,
           sky.latitudeProperty.value,
-          sky.siderealTimeProperty.value,
+          localSiderealTimeProperty.value,
         );
         return { point: this.horProjection.project(altAzToVector3(altDeg, azDeg)), visible: altDeg >= 0 };
       },
-      redrawProperties: [sky.latitudeProperty, sky.siderealTimeProperty, this.horProjection.viewMatrixProperty],
+      redrawProperties: [sky.latitudeProperty, localSiderealTimeProperty, this.horProjection.viewMatrixProperty],
     });
     horPatternLines.pickable = false;
     const horStars = new SkyStarsNode(sky, {
@@ -216,12 +235,12 @@ export class ExplorerScreenView extends ScreenView {
           star.raProperty.value,
           star.decProperty.value,
           sky.latitudeProperty.value,
-          sky.siderealTimeProperty.value,
+          localSiderealTimeProperty.value,
         );
         return { point: this.horProjection.project(altAzToVector3(altDeg, azDeg)), visible: altDeg >= 0 };
       },
       pointToEquatorial: (point) => this.horizonPointToEquatorial(point),
-      redrawProperties: [sky.latitudeProperty, sky.siderealTimeProperty, this.horProjection.viewMatrixProperty],
+      redrawProperties: [sky.latitudeProperty, localSiderealTimeProperty, this.horProjection.viewMatrixProperty],
       accessibleName: controls.starStringProperty,
     });
 
@@ -268,12 +287,17 @@ export class ExplorerScreenView extends ScreenView {
     this.addChild(new HorizonObserverNode(this.horProjection));
     this.addChild(horEquator);
     this.addChild(horAngle);
-    this.addChild(new SelectedStarHorizonArcsNode(this.horProjection, sky));
+    this.addChild(
+      new SelectedStarHorizonArcsNode(this.horProjection, sky, { siderealTimeProperty: localSiderealTimeProperty }),
+    );
     this.addChild(horTrails);
     this.addChild(horPatternLines);
     this.addChild(horStars);
 
-    const horReadout = new SkyReadoutNode(sky, { frame: "horizontal" });
+    const horReadout = new SkyReadoutNode(sky, {
+      frame: "horizontal",
+      siderealTimeProperty: localSiderealTimeProperty,
+    });
     positionReadoutBelowProjection(horReadout, this.horProjection);
     this.addChild(horReadout);
 
@@ -582,7 +606,7 @@ export class ExplorerScreenView extends ScreenView {
     const v = this.horProjection.unproject(point);
     const altDeg = radToDeg(Math.asin(clamp(v.z, -1, 1)));
     const azDeg = normalizeDegrees(radToDeg(Math.atan2(v.y, v.x)));
-    return horizontalToEquatorial(altDeg, azDeg, this.sky.latitudeProperty.value, this.sky.siderealTimeProperty.value);
+    return horizontalToEquatorial(altDeg, azDeg, this.sky.latitudeProperty.value, this.localSiderealTimeProperty.value);
   }
 
   /**

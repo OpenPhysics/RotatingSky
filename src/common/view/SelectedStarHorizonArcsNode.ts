@@ -52,6 +52,12 @@ const placeLabelOutside = (text: Text, point: Vector3, projection: SkyProjection
 export type SelectedStarHorizonArcsNodeOptions = {
   /** When true, hide the guides while the selected star is below the horizon. */
   hideBelowHorizonProperty?: TReadOnlyProperty<boolean>;
+
+  /**
+   * Sidereal time used to place the star on the horizon. Defaults to the model's sidereal time;
+   * the Explorer passes the observer's *local* sidereal time so the arcs track the longitude control.
+   */
+  siderealTimeProperty?: TReadOnlyProperty<number>;
 };
 
 export class SelectedStarHorizonArcsNode extends Node {
@@ -59,6 +65,8 @@ export class SelectedStarHorizonArcsNode extends Node {
 
   public constructor(projection: SkyProjection, model: SkyModel, options?: SelectedStarHorizonArcsNodeOptions) {
     super({ pickable: false });
+
+    const siderealTimeProperty = options?.siderealTimeProperty ?? model.siderealTimeProperty;
 
     const azimuthFront = new Path(null, {
       stroke: RotatingSkyColors.azimuthArcColorProperty,
@@ -112,7 +120,7 @@ export class SelectedStarHorizonArcsNode extends Node {
         star.raProperty.value,
         star.decProperty.value,
         model.latitudeProperty.value,
-        model.siderealTimeProperty.value,
+        siderealTimeProperty.value,
       );
 
       if (altDeg < 0 && options?.hideBelowHorizonProperty?.value) {
@@ -144,7 +152,7 @@ export class SelectedStarHorizonArcsNode extends Node {
               star.raProperty,
               star.decProperty,
               model.latitudeProperty,
-              model.siderealTimeProperty,
+              siderealTimeProperty,
               ...(hideBelowHorizon ? [hideBelowHorizon] : []),
             ],
             update,

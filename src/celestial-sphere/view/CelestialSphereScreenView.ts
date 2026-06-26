@@ -77,7 +77,12 @@ export class CelestialSphereScreenView extends ScreenView {
     });
 
     const sphereNode = new CelestialSphereNode(this.projection);
-    const globeNode = new EarthGlobeNode(this.projection, sky.latitudeProperty, sky.siderealTimeProperty);
+    const globeNode = new EarthGlobeNode(
+      this.projection,
+      sky.latitudeProperty,
+      sky.longitudeProperty,
+      sky.siderealTimeProperty,
+    );
     const horizonPlaneNode = new HorizonPlaneNode(this.projection, sky.latitudeProperty, sky.siderealTimeProperty);
 
     const starsNode = new SkyStarsNode(sky, {

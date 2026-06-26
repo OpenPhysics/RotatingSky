@@ -6,7 +6,7 @@
  * celestial sphere, azimuth/altitude under the horizon diagram).
  */
 
-import { Multilink, type UnknownMultilink } from "scenerystack/axon";
+import { Multilink, type TReadOnlyProperty, type UnknownMultilink } from "scenerystack/axon";
 import { VBox } from "scenerystack/scenery";
 import { StringManager } from "../../i18n/StringManager.js";
 import type { SkyModel } from "../model/SkyModel.js";
@@ -18,6 +18,13 @@ export type SkyReadoutFrame = "equatorial" | "horizontal";
 export type SkyReadoutNodeOptions = {
   /** Which coordinate frame to display. */
   frame: SkyReadoutFrame;
+
+  /**
+   * Sidereal time used for the equatorial↔horizontal conversion (horizontal frame only).
+   * Defaults to the model's sidereal time; the Explorer passes the observer's *local* sidereal
+   * time (sidereal time + longitude) so the alt/az readout tracks the longitude control.
+   */
+  siderealTimeProperty?: TReadOnlyProperty<number>;
 };
 
 const COORDINATE_DECIMAL_PLACES = 1;
@@ -28,6 +35,7 @@ export class SkyReadoutNode extends VBox {
   public constructor(model: SkyModel, options: SkyReadoutNodeOptions) {
     const controls = StringManager.getInstance().getControls();
     const { frame } = options;
+    const siderealTimeProperty = options.siderealTimeProperty ?? model.siderealTimeProperty;
 
     const firstField =
       frame === "equatorial"
@@ -55,13 +63,13 @@ export class SkyReadoutNode extends VBox {
                 star.raProperty.value,
                 star.decProperty.value,
                 model.latitudeProperty.value,
-                model.siderealTimeProperty.value,
+                siderealTimeProperty.value,
               );
               const { raHours, decDeg } = horizontalToEquatorial(
                 altDeg,
                 normalizeDegrees(azDeg),
                 model.latitudeProperty.value,
-                model.siderealTimeProperty.value,
+                siderealTimeProperty.value,
               );
               star.setEquatorial(raHours, decDeg);
             },
@@ -93,13 +101,13 @@ export class SkyReadoutNode extends VBox {
                 star.raProperty.value,
                 star.decProperty.value,
                 model.latitudeProperty.value,
-                model.siderealTimeProperty.value,
+                siderealTimeProperty.value,
               );
               const { raHours, decDeg } = horizontalToEquatorial(
                 Math.max(-90, Math.min(90, altDeg)),
                 azDeg,
                 model.latitudeProperty.value,
-                model.siderealTimeProperty.value,
+                siderealTimeProperty.value,
               );
               star.setEquatorial(raHours, decDeg);
             },
@@ -125,7 +133,7 @@ export class SkyReadoutNode extends VBox {
           star.raProperty.value,
           star.decProperty.value,
           model.latitudeProperty.value,
-          model.siderealTimeProperty.value,
+          siderealTimeProperty.value,
         );
         firstField.setDisplayValue(azDeg);
         secondField.setDisplayValue(altDeg);
@@ -140,7 +148,7 @@ export class SkyReadoutNode extends VBox {
       } else {
         this.starLink = star
           ? Multilink.multilinkAny(
-              [star.raProperty, star.decProperty, model.latitudeProperty, model.siderealTimeProperty],
+              [star.raProperty, star.decProperty, model.latitudeProperty, siderealTimeProperty],
               update,
             )
           : null;

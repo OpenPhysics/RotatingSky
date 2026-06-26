@@ -13,7 +13,7 @@ import { type Vector2, Vector3 } from "scenerystack/dot";
 import { Shape } from "scenerystack/kite";
 import { Circle, Node, Path } from "scenerystack/scenery";
 import RotatingSkyColors from "../../RotatingSkyColors.js";
-import { raDecToVector3 } from "../SkyCoordinates.js";
+import { HOURS_PER_DAY, raDecToVector3 } from "../SkyCoordinates.js";
 import type { SkyProjection } from "../SkyProjection.js";
 import { EARTH_SHORE_POLYGONS, type EarthShorePoint } from "./EarthShoreData.js";
 import { addFrontHemispherePolyline, addFrontHemisphereSphericalPolygon, smallCirclePoints } from "./skyGraphics.js";
@@ -26,6 +26,7 @@ export class EarthGlobeNode extends Node {
   public constructor(
     projection: SkyProjection,
     latitudeProperty: TReadOnlyProperty<number>,
+    longitudeProperty: TReadOnlyProperty<number>,
     siderealTimeProperty: TReadOnlyProperty<number>,
   ) {
     super();
@@ -53,10 +54,10 @@ export class EarthGlobeNode extends Node {
 
     this.children = [disc, landPath, gridPath, observerDot];
 
-    const shorePointToVector = (point: EarthShorePoint, lst: number): Vector3 => {
+    const shorePointToVector = (point: EarthShorePoint, gst: number): Vector3 => {
       const lonHours = (Math.atan2(point.y, point.x) / (2 * Math.PI)) * 24;
       const latDeg = Math.asin(point.z) * (180 / Math.PI);
-      return raDecToVector3(lst + lonHours, latDeg);
+      return raDecToVector3(gst + lonHours, latDeg);
     };
 
     // Project a unit vector onto the (smaller) globe; report front-facing.
@@ -76,20 +77,26 @@ export class EarthGlobeNode extends Node {
       gridPath.clipArea = clip;
     };
 
-    const addFrontLandPolygon = (shape: Shape, polygon: readonly EarthShorePoint[], lst: number): void => {
-      const vertices = polygon.map((point) => shorePointToVector(point, lst));
+    const addFrontLandPolygon = (shape: Shape, polygon: readonly EarthShorePoint[], gst: number): void => {
+      const vertices = polygon.map((point) => shorePointToVector(point, gst));
       addFrontHemisphereSphericalPolygon(projection, vertices, shape, mapGlobePoint, projection.center, globeRadius);
     };
 
     Multilink.multilink(
-      [projection.viewMatrixProperty, latitudeProperty, siderealTimeProperty],
-      (_m, latitude, lst) => {
+      [projection.viewMatrixProperty, latitudeProperty, longitudeProperty, siderealTimeProperty],
+      (_m, latitude, longitude, lst) => {
         disc.center = projection.center;
         applyGlobeClip();
 
+        // The sidereal time is *local* to the observer, so the prime meridian sits at the
+        // Greenwich sidereal time, GST = LST − longitude. Anchoring the geography to GST keeps
+        // the observer's own city beneath the dot (which stays at RA = LST) rather than always
+        // drawing the 0° meridian under it.
+        const gst = lst - (longitude / 360) * HOURS_PER_DAY;
+
         const landShape = new Shape();
         for (const polygon of EARTH_SHORE_POLYGONS) {
-          addFrontLandPolygon(landShape, polygon, lst);
+          addFrontLandPolygon(landShape, polygon, gst);
         }
         landPath.shape = landShape;
 
@@ -98,7 +105,7 @@ export class EarthGlobeNode extends Node {
         for (const lon of GLOBE_LONGITUDES) {
           const points: Vector3[] = [];
           for (let dec = -90; dec <= 90; dec += 7.5) {
-            points.push(raDecToVector3(lst + (lon / 360) * 24, dec));
+            points.push(raDecToVector3(gst + (lon / 360) * HOURS_PER_DAY, dec));
           }
           addFrontHemispherePolyline(projection, points, shape, mapGlobePoint);
         }
