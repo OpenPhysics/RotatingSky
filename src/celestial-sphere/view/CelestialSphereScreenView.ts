@@ -6,7 +6,7 @@
  * celestial-sphere orientation and the horizon orientation. Drag to rotate.
  */
 
-import { DerivedProperty, Multilink } from "scenerystack/axon";
+import { DerivedProperty, Multilink, type TReadOnlyProperty } from "scenerystack/axon";
 import { clamp, Vector2 } from "scenerystack/dot";
 import { DragListener, Node, Rectangle, Text, VBox } from "scenerystack/scenery";
 import { PhetFont, ResetAllButton, TimeControlNode } from "scenerystack/scenery-phet";
@@ -32,6 +32,7 @@ import { StringManager } from "../../i18n/StringManager.js";
 import RotatingSkyColors from "../../RotatingSkyColors.js";
 import {
   CONTROL_FONT_SIZE,
+  type EarthMapResolution,
   PANEL_CONTENT_SPACING,
   RESET_ALL_BUTTON_BOTTOM_MARGIN,
   SCREEN_VIEW_MARGIN,
@@ -40,16 +41,21 @@ import {
 import type { CelestialSphereModel } from "../model/CelestialSphereModel.js";
 import { CelestialSphereScreenSummaryContent } from "./CelestialSphereScreenSummaryContent.js";
 
+type CelestialSphereScreenViewOptions = ScreenViewOptions & {
+  earthMapResolutionProperty: TReadOnlyProperty<EarthMapResolution>;
+};
+
 const ROTATE_SPEED = 0.01;
 const MORPH_DURATION = 1.2; // seconds
 
 export class CelestialSphereScreenView extends ScreenView {
   private readonly projection: SkyProjection;
 
-  public constructor(model: CelestialSphereModel, options?: ScreenViewOptions) {
+  public constructor(model: CelestialSphereModel, options: CelestialSphereScreenViewOptions) {
+    const { earthMapResolutionProperty, ...screenViewOptions } = options;
     super({
       screenSummaryContent: new CelestialSphereScreenSummaryContent(model),
-      ...options,
+      ...screenViewOptions,
     });
 
     const sky = model.sky;
@@ -82,6 +88,7 @@ export class CelestialSphereScreenView extends ScreenView {
       sky.latitudeProperty,
       sky.longitudeProperty,
       sky.siderealTimeProperty,
+      earthMapResolutionProperty,
     );
     const horizonPlaneNode = new HorizonPlaneNode(this.projection, sky.latitudeProperty, sky.siderealTimeProperty);
 

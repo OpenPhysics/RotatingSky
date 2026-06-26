@@ -92,6 +92,9 @@
   "preferences": {
     "title": "Simulation",
     "defaultLatitude": "Default Latitude",
-    "defaultLongitude": "Default Longitude"
+    "defaultLongitude": "Default Longitude",
+    "earthMapResolution": "Earth Map Detail",
+    "earthMapResolutionLow": "Low (NAAP outline)",
+    "earthMapResolutionHigh": "High (Natural Earth)"
   }
 }

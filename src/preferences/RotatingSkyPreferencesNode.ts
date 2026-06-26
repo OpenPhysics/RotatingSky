@@ -9,10 +9,11 @@
 
 import { Text, VBox } from "scenerystack/scenery";
 import { NumberControl, PhetFont } from "scenerystack/scenery-phet";
+import { VerticalAquaRadioButtonGroup } from "scenerystack/sun";
 import type { Tandem } from "scenerystack/tandem";
 import { FLAT_RECTANGULAR_BUTTON_OPTIONS } from "../common/RotatingSkyButtonOptions.js";
 import { StringManager } from "../i18n/StringManager.js";
-import { LATITUDE_RANGE, LONGITUDE_RANGE } from "../RotatingSkyConstants.js";
+import { type EarthMapResolution, LATITUDE_RANGE, LONGITUDE_RANGE } from "../RotatingSkyConstants.js";
 import RotatingSkyNamespace from "../RotatingSkyNamespace.js";
 import type { RotatingSkyPreferencesModel } from "./RotatingSkyPreferencesModel.js";
 
@@ -66,6 +67,39 @@ export class RotatingSkyPreferencesNode extends VBox {
           preferencesModel.defaultLongitudeProperty,
           LONGITUDE_RANGE,
           "defaultLongitudeControl",
+        ),
+        new Text(prefStrings.earthMapResolutionStringProperty, {
+          font: new PhetFont(14),
+          fill: PREFERENCES_TEXT_FILL,
+          maxWidth: 220,
+        }),
+        new VerticalAquaRadioButtonGroup<EarthMapResolution>(
+          preferencesModel.earthMapResolutionProperty,
+          [
+            {
+              value: "low",
+              createNode: () =>
+                new Text(prefStrings.earthMapResolutionLowStringProperty, {
+                  font: new PhetFont(14),
+                  fill: PREFERENCES_TEXT_FILL,
+                }),
+              options: { accessibleName: prefStrings.earthMapResolutionLowStringProperty },
+            },
+            {
+              value: "high",
+              createNode: () =>
+                new Text(prefStrings.earthMapResolutionHighStringProperty, {
+                  font: new PhetFont(14),
+                  fill: PREFERENCES_TEXT_FILL,
+                }),
+              options: { accessibleName: prefStrings.earthMapResolutionHighStringProperty },
+            },
+          ],
+          {
+            spacing: 4,
+            radioButtonOptions: { radius: 6 },
+            ...(tandem && { tandem: tandem.createTandem("earthMapResolutionRadioButtonGroup") }),
+          },
         ),
       ],
     });

@@ -13,9 +13,10 @@ import { type Vector2, Vector3 } from "scenerystack/dot";
 import { Shape } from "scenerystack/kite";
 import { Circle, Node, Path } from "scenerystack/scenery";
 import RotatingSkyColors from "../../RotatingSkyColors.js";
+import type { EarthMapResolution } from "../../RotatingSkyConstants.js";
 import { HOURS_PER_DAY, raDecToVector3 } from "../SkyCoordinates.js";
 import type { SkyProjection } from "../SkyProjection.js";
-import { EARTH_SHORE_POLYGONS, type EarthShorePoint } from "./EarthShoreData.js";
+import { type EarthShorePoint, getEarthShorePolygons } from "./EarthShoreData.js";
 import { addFrontHemispherePolyline, addFrontHemisphereSphericalPolygon, smallCirclePoints } from "./skyGraphics.js";
 
 const NCP = new Vector3(0, 0, 1);
@@ -28,6 +29,7 @@ export class EarthGlobeNode extends Node {
     latitudeProperty: TReadOnlyProperty<number>,
     longitudeProperty: TReadOnlyProperty<number>,
     siderealTimeProperty: TReadOnlyProperty<number>,
+    earthMapResolutionProperty: TReadOnlyProperty<EarthMapResolution>,
   ) {
     super();
 
@@ -83,8 +85,14 @@ export class EarthGlobeNode extends Node {
     };
 
     Multilink.multilink(
-      [projection.viewMatrixProperty, latitudeProperty, longitudeProperty, siderealTimeProperty],
-      (_m, latitude, longitude, lst) => {
+      [
+        projection.viewMatrixProperty,
+        latitudeProperty,
+        longitudeProperty,
+        siderealTimeProperty,
+        earthMapResolutionProperty,
+      ],
+      (_m, latitude, longitude, lst, resolution) => {
         disc.center = projection.center;
         applyGlobeClip();
 
@@ -95,7 +103,7 @@ export class EarthGlobeNode extends Node {
         const gst = lst - (longitude / 360) * HOURS_PER_DAY;
 
         const landShape = new Shape();
-        for (const polygon of EARTH_SHORE_POLYGONS) {
+        for (const polygon of getEarthShorePolygons(resolution)) {
           addFrontLandPolygon(landShape, polygon, gst);
         }
         landPath.shape = landShape;

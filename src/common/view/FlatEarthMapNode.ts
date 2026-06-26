@@ -7,14 +7,19 @@
  * nudge the location in 5° steps.
  */
 
-import { Multilink, type NumberProperty } from "scenerystack/axon";
+import { Multilink, type NumberProperty, type TReadOnlyProperty } from "scenerystack/axon";
 import { Vector2 } from "scenerystack/dot";
 import { Shape } from "scenerystack/kite";
 import { Circle, DragListener, KeyboardListener, Line, Node, Path, Rectangle } from "scenerystack/scenery";
 import { StringManager } from "../../i18n/StringManager.js";
 import RotatingSkyColors from "../../RotatingSkyColors.js";
-import { LATITUDE_RANGE, LOCATION_STEP_DEGREES, LONGITUDE_RANGE } from "../../RotatingSkyConstants.js";
-import { EARTH_SHORE_POLYGONS, type EarthShorePoint } from "./EarthShoreData.js";
+import {
+  type EarthMapResolution,
+  LATITUDE_RANGE,
+  LOCATION_STEP_DEGREES,
+  LONGITUDE_RANGE,
+} from "../../RotatingSkyConstants.js";
+import { type EarthShorePoint, getEarthShorePolygons } from "./EarthShoreData.js";
 
 export type FlatEarthMapNodeOptions = { width: number; height: number };
 
@@ -106,7 +111,7 @@ const addSouthCapShorePolygonToShape = (
   shape.close();
 };
 
-/** Add one NAAP shore polygon to the flat map shape. */
+/** Add one land shore polygon to the flat map shape. */
 const addShorePolygonToShape = (
   shape: Shape,
   polygon: readonly EarthShorePoint[],
@@ -127,10 +132,25 @@ const addShorePolygonToShape = (
   }
 };
 
+const buildLandShape = (
+  resolution: EarthMapResolution,
+  lonToX: (lon: number) => number,
+  latToY: (lat: number) => number,
+  width: number,
+  height: number,
+): Shape => {
+  const land = new Shape();
+  for (const polygon of getEarthShorePolygons(resolution)) {
+    addShorePolygonToShape(land, polygon, lonToX, latToY, width, height);
+  }
+  return land;
+};
+
 export class FlatEarthMapNode extends Node {
   public constructor(
     latitudeProperty: NumberProperty,
     longitudeProperty: NumberProperty,
+    earthMapResolutionProperty: TReadOnlyProperty<EarthMapResolution>,
     options: FlatEarthMapNodeOptions,
   ) {
     const { width, height } = options;
@@ -148,15 +168,14 @@ export class FlatEarthMapNode extends Node {
       cursor: "pointer",
     });
 
-    const land = new Shape();
-    for (const polygon of EARTH_SHORE_POLYGONS) {
-      addShorePolygonToShape(land, polygon, lonToX, latToY, width, height);
-    }
-    const landPath = new Path(land, {
+    const landPath = new Path(buildLandShape(earthMapResolutionProperty.value, lonToX, latToY, width, height), {
       fill: RotatingSkyColors.earthLandColorProperty,
       stroke: RotatingSkyColors.sphereOutlineColorProperty,
       lineWidth: 0.35,
       opacity: 0.95,
+    });
+    earthMapResolutionProperty.link((resolution) => {
+      landPath.shape = buildLandShape(resolution, lonToX, latToY, width, height);
     });
 
     // Graticule: parallels every 30°, meridians every 60°.

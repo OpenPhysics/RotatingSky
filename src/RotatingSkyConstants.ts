@@ -110,6 +110,16 @@ export const MAX_STARS = 30;
 /** Screen-space radius (px) of a rendered star dot. */
 export const STAR_RADIUS = 5;
 
+// ── Flat Earth map ────────────────────────────────────────────────────────────
+
+/** Shoreline detail for the Explorer flat Earth map. */
+export type EarthMapResolution = "low" | "high";
+
+export const EARTH_MAP_RESOLUTION_VALUES = ["low", "high"] as const satisfies readonly EarthMapResolution[];
+
+/** Default flat-map shoreline when no query parameter is supplied. */
+export const DEFAULT_EARTH_MAP_RESOLUTION: EarthMapResolution = "high";
+
 RotatingSkyNamespace.register("RotatingSkyConstants", {
   RESET_ALL_BUTTON_BOTTOM_MARGIN,
   SCREEN_VIEW_MARGIN,
@@ -136,4 +146,6 @@ RotatingSkyNamespace.register("RotatingSkyConstants", {
   LONG_TRAIL_HOURS,
   MAX_STARS,
   STAR_RADIUS,
+  EARTH_MAP_RESOLUTION_VALUES,
+  DEFAULT_EARTH_MAP_RESOLUTION,
 });

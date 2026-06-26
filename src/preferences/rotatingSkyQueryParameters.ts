@@ -16,7 +16,12 @@
 
 import { logGlobal } from "scenerystack/phet-core";
 import { QueryStringMachine } from "scenerystack/query-string-machine";
-import { DEFAULT_LATITUDE, DEFAULT_LONGITUDE } from "../RotatingSkyConstants.js";
+import {
+  DEFAULT_EARTH_MAP_RESOLUTION,
+  DEFAULT_LATITUDE,
+  DEFAULT_LONGITUDE,
+  EARTH_MAP_RESOLUTION_VALUES,
+} from "../RotatingSkyConstants.js";
 import RotatingSkyNamespace from "../RotatingSkyNamespace.js";
 
 const rotatingSkyQueryParameters = QueryStringMachine.getAll({
@@ -38,6 +43,18 @@ const rotatingSkyQueryParameters = QueryStringMachine.getAll({
     type: "number",
     defaultValue: DEFAULT_LONGITUDE,
     isValidValue: (value: number) => value >= -180 && value <= 180,
+    public: true,
+  },
+
+  /**
+   * Flat Earth map shoreline detail on the Explorer screen. `low` uses the
+   * original NAAP outline; `high` uses Natural Earth land polygons.
+   * Example: `?earthMapResolution=low`.
+   */
+  earthMapResolution: {
+    type: "string",
+    defaultValue: DEFAULT_EARTH_MAP_RESOLUTION,
+    validValues: EARTH_MAP_RESOLUTION_VALUES,
     public: true,
   },
 });

@@ -36,6 +36,7 @@ export class CelestialSphereScreen extends Screen<CelestialSphereModel, Celestia
       (model) =>
         new CelestialSphereScreenView(model, {
           tandem: options.tandem.createTandem("view"),
+          earthMapResolutionProperty: preferences.earthMapResolutionProperty,
         }),
       optionize<ScreenOptions & { tandem: Tandem }, EmptySelfOptions, ScreenOptions>()(
         {

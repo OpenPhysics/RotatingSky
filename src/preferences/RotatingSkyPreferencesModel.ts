@@ -7,9 +7,14 @@
  * (and, on Reset All, restores) its location from these Properties.
  */
 
-import { NumberProperty } from "scenerystack/axon";
+import { NumberProperty, StringUnionProperty } from "scenerystack/axon";
 import type { Tandem } from "scenerystack/tandem";
-import { LATITUDE_RANGE, LONGITUDE_RANGE } from "../RotatingSkyConstants.js";
+import {
+  EARTH_MAP_RESOLUTION_VALUES,
+  type EarthMapResolution,
+  LATITUDE_RANGE,
+  LONGITUDE_RANGE,
+} from "../RotatingSkyConstants.js";
 import RotatingSkyNamespace from "../RotatingSkyNamespace.js";
 import rotatingSkyQueryParameters from "./rotatingSkyQueryParameters.js";
 
@@ -20,6 +25,9 @@ export class RotatingSkyPreferencesModel {
   /** Default observer longitude (deg); initial value from the `longitude` query parameter. */
   public readonly defaultLongitudeProperty: NumberProperty;
 
+  /** Flat Earth map shoreline detail; initial value from the `earthMapResolution` query parameter. */
+  public readonly earthMapResolutionProperty: StringUnionProperty<EarthMapResolution>;
+
   public constructor(tandem?: Tandem) {
     this.defaultLatitudeProperty = new NumberProperty(rotatingSkyQueryParameters.latitude, {
       range: LATITUDE_RANGE,
@@ -29,11 +37,19 @@ export class RotatingSkyPreferencesModel {
       range: LONGITUDE_RANGE,
       ...(tandem && { tandem: tandem.createTandem("defaultLongitudeProperty") }),
     });
+    this.earthMapResolutionProperty = new StringUnionProperty(
+      rotatingSkyQueryParameters.earthMapResolution as EarthMapResolution,
+      {
+        validValues: EARTH_MAP_RESOLUTION_VALUES,
+        ...(tandem && { tandem: tandem.createTandem("earthMapResolutionProperty") }),
+      },
+    );
   }
 
   public reset(): void {
     this.defaultLatitudeProperty.reset();
     this.defaultLongitudeProperty.reset();
+    this.earthMapResolutionProperty.reset();
   }
 }
 

@@ -145,6 +145,16 @@
       }
     },
     {
+      "includes": ["src/common/view/EarthShoreDataHigh.ts", "src/common/view/EarthShoreDataLow.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noApproximativeNumericConstant": "off"
+          }
+        }
+      }
+    },
+    {
       "includes": ["scripts/**"],
       "linter": {
         "rules": {

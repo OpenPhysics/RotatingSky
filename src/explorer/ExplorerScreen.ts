@@ -36,6 +36,7 @@ export class ExplorerScreen extends Screen<ExplorerModel, ExplorerScreenView> {
       (model) =>
         new ExplorerScreenView(model, {
           tandem: options.tandem.createTandem("view"),
+          earthMapResolutionProperty: preferences.earthMapResolutionProperty,
         }),
       optionize<ScreenOptions & { tandem: Tandem }, EmptySelfOptions, ScreenOptions>()(
         {

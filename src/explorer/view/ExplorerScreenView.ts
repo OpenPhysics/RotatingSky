@@ -80,6 +80,7 @@ import RotatingSkyColors from "../../RotatingSkyColors.js";
 import {
   ANIMATION_RATE_RANGE,
   CONTROL_FONT_SIZE,
+  type EarthMapResolution,
   LATITUDE_RANGE,
   LONG_TRAIL_HOURS,
   LONGITUDE_RANGE,
@@ -91,6 +92,10 @@ import {
 } from "../../RotatingSkyConstants.js";
 import type { ExplorerModel } from "../model/ExplorerModel.js";
 import { ExplorerScreenSummaryContent } from "./ExplorerScreenSummaryContent.js";
+
+type ExplorerScreenViewOptions = ScreenViewOptions & {
+  earthMapResolutionProperty: TReadOnlyProperty<EarthMapResolution>;
+};
 
 const ROTATE_SPEED = 0.01;
 const SPHERE_RADIUS = 118;
@@ -108,10 +113,11 @@ export class ExplorerScreenView extends ScreenView {
    */
   private readonly localSiderealTimeProperty: TReadOnlyProperty<number>;
 
-  public constructor(model: ExplorerModel, options?: ScreenViewOptions) {
+  public constructor(model: ExplorerModel, options: ExplorerScreenViewOptions) {
+    const { earthMapResolutionProperty, ...screenViewOptions } = options;
     super({
       screenSummaryContent: new ExplorerScreenSummaryContent(model),
-      ...options,
+      ...screenViewOptions,
     });
 
     const sky = model.sky;
@@ -177,7 +183,13 @@ export class ExplorerScreenView extends ScreenView {
     this.addChild(celSphere);
     this.addChild(new HorizonPlaneNode(this.celProjection, sky.latitudeProperty, localSiderealTimeProperty));
     this.addChild(
-      new EarthGlobeNode(this.celProjection, sky.latitudeProperty, sky.longitudeProperty, localSiderealTimeProperty),
+      new EarthGlobeNode(
+        this.celProjection,
+        sky.latitudeProperty,
+        sky.longitudeProperty,
+        localSiderealTimeProperty,
+        earthMapResolutionProperty,
+      ),
     );
     this.addChild(celPatternLines);
     this.addChild(celStars);
@@ -332,7 +344,10 @@ export class ExplorerScreenView extends ScreenView {
       });
 
     // ── Observer's Location panel ────────────────────────────────────────────────
-    const map = new FlatEarthMapNode(sky.latitudeProperty, sky.longitudeProperty, { width: 220, height: 110 });
+    const map = new FlatEarthMapNode(sky.latitudeProperty, sky.longitudeProperty, earthMapResolutionProperty, {
+      width: 220,
+      height: 110,
+    });
     const latitudeControl = numberControl(controls.latitudeStringProperty, sky.latitudeProperty, LATITUDE_RANGE);
     const longitudeControl = numberControl(controls.longitudeStringProperty, sky.longitudeProperty, LONGITUDE_RANGE);
     const locationPanel = new RotatingSkyPanel(
