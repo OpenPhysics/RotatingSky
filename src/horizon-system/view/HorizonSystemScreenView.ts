@@ -16,6 +16,7 @@ import {
   FLAT_PLAY_PAUSE_STEP_BUTTON_OPTIONS,
   FLAT_RECTANGULAR_BUTTON_OPTIONS,
   FLAT_RESET_ALL_BUTTON_OPTIONS,
+  TIME_CONTROL_SPEED_RADIO_OPTIONS,
 } from "../../common/RotatingSkyButtonOptions.js";
 import { RotatingSkyPanel } from "../../common/RotatingSkyPanel.js";
 import {
@@ -132,7 +133,6 @@ export class HorizonSystemScreenView extends ScreenView {
       numberDisplayOptions: {
         decimalPlaces: 0,
         valuePattern: "{{value}}°",
-        textOptions: { fill: RotatingSkyColors.textColorProperty },
       },
       titleNodeOptions: { font: new PhetFont(14), fill: RotatingSkyColors.textColorProperty, maxWidth: 180 },
       sliderOptions: { trackFillEnabled: RotatingSkyColors.textColorProperty },
@@ -156,6 +156,7 @@ export class HorizonSystemScreenView extends ScreenView {
 
     const timeControl = new TimeControlNode(sky.timer.isPlayingProperty, {
       timeSpeedProperty: sky.timeSpeedProperty,
+      ...TIME_CONTROL_SPEED_RADIO_OPTIONS,
       playPauseStepButtonOptions: {
         ...FLAT_PLAY_PAUSE_STEP_BUTTON_OPTIONS,
         stepForwardButtonOptions: {

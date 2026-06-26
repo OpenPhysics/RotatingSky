@@ -6,8 +6,9 @@
  * into nested button options) for a flat look everywhere.
  */
 
-import type { PlayPauseStepButtonGroupOptions } from "scenerystack/scenery-phet";
+import type { PlayPauseStepButtonGroupOptions, TimeControlNodeOptions } from "scenerystack/scenery-phet";
 import { ButtonNode } from "scenerystack/sun";
+import RotatingSkyColors from "../RotatingSkyColors.js";
 
 export const FLAT_BUTTON_APPEARANCE_OPTIONS = {
   buttonAppearanceStrategy: ButtonNode.FlatAppearanceStrategy,
@@ -25,3 +26,13 @@ export const FLAT_PLAY_PAUSE_STEP_BUTTON_OPTIONS = {
   stepForwardButtonOptions: FLAT_BUTTON_APPEARANCE_OPTIONS,
   stepBackwardButtonOptions: FLAT_BUTTON_APPEARANCE_OPTIONS,
 } satisfies PlayPauseStepButtonGroupOptions;
+
+/**
+ * Speed radio labels for TimeControlNode. SceneryStack Text defaults to black, which
+ * is low-contrast on the sim's dark Default-mode panels.
+ */
+export const TIME_CONTROL_SPEED_RADIO_OPTIONS = {
+  speedRadioButtonGroupOptions: {
+    labelOptions: { fill: RotatingSkyColors.textColorProperty },
+  },
+} satisfies Pick<TimeControlNodeOptions, "speedRadioButtonGroupOptions">;

@@ -246,7 +246,6 @@ export class ExplorerScreenView extends ScreenView {
         numberDisplayOptions: {
           decimalPlaces: 0,
           valuePattern: "{{value}}°",
-          textOptions: { fill: textFill },
         },
         titleNodeOptions: { font: new PhetFont(13), fill: textFill, maxWidth: 120 },
         sliderOptions: { trackFillEnabled: textFill },

@@ -18,6 +18,7 @@ import {
   FLAT_PLAY_PAUSE_STEP_BUTTON_OPTIONS,
   FLAT_RECTANGULAR_BUTTON_OPTIONS,
   FLAT_RESET_ALL_BUTTON_OPTIONS,
+  TIME_CONTROL_SPEED_RADIO_OPTIONS,
 } from "../../common/RotatingSkyButtonOptions.js";
 import { RotatingSkyPanel } from "../../common/RotatingSkyPanel.js";
 import { normalizeHours, raDecToVector3, radiansToHours, radToDeg } from "../../common/SkyCoordinates.js";
@@ -140,6 +141,7 @@ export class CelestialSphereScreenView extends ScreenView {
 
     const timeControl = new TimeControlNode(sky.timer.isPlayingProperty, {
       timeSpeedProperty: sky.timeSpeedProperty,
+      ...TIME_CONTROL_SPEED_RADIO_OPTIONS,
       playPauseStepButtonOptions: {
         ...FLAT_PLAY_PAUSE_STEP_BUTTON_OPTIONS,
         stepForwardButtonOptions: {
