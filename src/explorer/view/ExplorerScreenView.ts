@@ -186,8 +186,9 @@ export class ExplorerScreenView extends ScreenView {
     this.addChild(celLabel);
     this.addChild(this.addSphereInteraction(this.celProjection, (point) => this.celestialPointToEquatorial(point)));
     this.addChild(celRegions);
-    this.addChild(celSphere);
-    this.addChild(new HorizonPlaneNode(this.celProjection, sky.latitudeProperty, localSiderealTimeProperty));
+    const celHorizonPlane = new HorizonPlaneNode(this.celProjection, sky.latitudeProperty, localSiderealTimeProperty);
+    this.addChild(celSphere.backLayer);
+    this.addChild(celHorizonPlane.backLayer);
     this.addChild(
       new EarthGlobeNode(
         this.celProjection,
@@ -197,6 +198,8 @@ export class ExplorerScreenView extends ScreenView {
         earthMapResolutionProperty,
       ),
     );
+    this.addChild(celSphere.frontLayer);
+    this.addChild(celHorizonPlane.frontLayer);
     this.addChild(celPatternLines);
     this.addChild(celStars);
 

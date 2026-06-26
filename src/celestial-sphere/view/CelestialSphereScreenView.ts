@@ -169,9 +169,11 @@ export class CelestialSphereScreenView extends ScreenView {
       accessibleName: controls.starStringProperty,
     });
 
-    this.addChild(sphereNode);
-    this.addChild(horizonPlaneNode);
+    this.addChild(sphereNode.backLayer);
+    this.addChild(horizonPlaneNode.backLayer);
     this.addChild(globeNode);
+    this.addChild(sphereNode.frontLayer);
+    this.addChild(horizonPlaneNode.frontLayer);
     this.addChild(starsNode);
 
     // Drag the background to rotate the camera.

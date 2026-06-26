@@ -5,6 +5,10 @@
  * (+Z = NCP): the silhouette, the RA/Dec graticule, the celestial equator, the
  * ecliptic, and the pole markers. Lines on the far hemisphere are dashed.
  * Re-projects whenever the view matrix (camera ∘ frame) changes.
+ *
+ * Paint order is split across {@link backLayer} and {@link frontLayer} so callers
+ * can sandwich the Earth globe between the dashed (behind) and solid (in front)
+ * strokes.
  */
 
 import { Multilink, type TReadOnlyProperty } from "scenerystack/axon";
@@ -48,6 +52,11 @@ const meridianPoints = (raHours: number): Vector3[] => {
 };
 
 export class CelestialSphereNode extends Node {
+  /** Dashed far-side strokes and the sphere outline — paint before the Earth globe. */
+  public readonly backLayer: Node;
+  /** Solid near-side strokes and pole markers — paint after the Earth globe. */
+  public readonly frontLayer: Node;
+
   public constructor(projection: SkyProjection, options?: CelestialSphereNodeOptions) {
     super();
 
@@ -73,7 +82,8 @@ export class CelestialSphereNode extends Node {
     const hourCircleFront = solid(RotatingSkyColors.accentColorProperty, 1.5);
     const hourCircleBack = dashed(RotatingSkyColors.accentColorProperty, 1.5);
     const hourCircleLabel = new Text("0ʰ", { font: new PhetFont(12), fill: RotatingSkyColors.accentColorProperty });
-    const hourCircle = new Node({ children: [hourCircleBack, hourCircleFront, hourCircleLabel] });
+    const hourCircleBackLayer = new Node({ children: [hourCircleBack] });
+    const hourCircleFrontLayer = new Node({ children: [hourCircleFront, hourCircleLabel] });
 
     const poleDot = (): Circle => new Circle(POLE_DOT_RADIUS, { fill: RotatingSkyColors.cardinalLabelColorProperty });
     const ncpDot = poleDot();
@@ -83,22 +93,16 @@ export class CelestialSphereNode extends Node {
     const ncpText = poleLabel("NCP");
     const scpText = poleLabel("SCP");
 
-    // Group the optionally-toggled elements so one link hides each whole feature.
-    const celestialEquator = new Node({ children: [equatorBack, equatorFront] });
+    const celestialEquatorBackLayer = new Node({ children: [equatorBack] });
+    const celestialEquatorFrontLayer = new Node({ children: [equatorFront] });
     const labels = new Node({ children: [ncpText, scpText] });
 
-    this.children = [
-      outline,
-      gridBack,
-      eclipticBack,
-      gridFront,
-      eclipticFront,
-      celestialEquator,
-      hourCircle,
-      ncpDot,
-      scpDot,
-      labels,
-    ];
+    this.backLayer = new Node({
+      children: [outline, gridBack, eclipticBack, celestialEquatorBackLayer, hourCircleBackLayer],
+    });
+    this.frontLayer = new Node({
+      children: [gridFront, eclipticFront, celestialEquatorFrontLayer, hourCircleFrontLayer, ncpDot, scpDot, labels],
+    });
 
     const placeLabel = (text: Node, point: Vector3): void => {
       const screen = projection.project(point);
@@ -143,10 +147,12 @@ export class CelestialSphereNode extends Node {
     });
 
     options?.celestialEquatorVisibleProperty?.link((visible) => {
-      celestialEquator.visible = visible;
+      celestialEquatorBackLayer.visible = visible;
+      celestialEquatorFrontLayer.visible = visible;
     });
     options?.hourCircleVisibleProperty?.link((visible) => {
-      hourCircle.visible = visible;
+      hourCircleBackLayer.visible = visible;
+      hourCircleFrontLayer.visible = visible;
     });
     options?.labelsVisibleProperty?.link((visible) => {
       labels.visible = visible;

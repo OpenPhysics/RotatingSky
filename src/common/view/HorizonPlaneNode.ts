@@ -4,6 +4,9 @@
  * The observer's horizon drawn as a great circle on the celestial sphere, tilted
  * so its pole (the zenith) sits at RA = LST, Dec = latitude. Shown on the
  * Celestial Sphere and Explorer screens. The far half is dashed.
+ *
+ * Paint order is split across {@link backLayer} and {@link frontLayer} so callers
+ * can sandwich the Earth globe between the dashed and solid halves.
  */
 
 import { Multilink, type TReadOnlyProperty } from "scenerystack/axon";
@@ -14,6 +17,11 @@ import type { SkyProjection } from "../SkyProjection.js";
 import { projectSplitPolyline, smallCirclePoints } from "./skyGraphics.js";
 
 export class HorizonPlaneNode extends Node {
+  /** Dashed far-side half — paint before the Earth globe. */
+  public readonly backLayer: Node;
+  /** Solid near-side half and zenith marker — paint after the Earth globe. */
+  public readonly frontLayer: Node;
+
   public constructor(
     projection: SkyProjection,
     latitudeProperty: TReadOnlyProperty<number>,
@@ -30,7 +38,8 @@ export class HorizonPlaneNode extends Node {
     const front = new Path(null, { stroke: RotatingSkyColors.horizonColorProperty, lineWidth: 1 });
     const zenithDot = new Circle(4, { fill: RotatingSkyColors.horizonColorProperty });
 
-    this.children = [back, front, zenithDot];
+    this.backLayer = new Node({ children: [back] });
+    this.frontLayer = new Node({ children: [front, zenithDot] });
 
     Multilink.multilink(
       [projection.viewMatrixProperty, latitudeProperty, siderealTimeProperty],
