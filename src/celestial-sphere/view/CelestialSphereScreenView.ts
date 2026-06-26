@@ -36,7 +36,6 @@ import {
   PANEL_CONTENT_SPACING,
   RESET_ALL_BUTTON_BOTTOM_MARGIN,
   SCREEN_VIEW_MARGIN,
-  SPHERE_RADIUS,
 } from "../../RotatingSkyConstants.js";
 import type { CelestialSphereModel } from "../model/CelestialSphereModel.js";
 import { CelestialSphereScreenSummaryContent } from "./CelestialSphereScreenSummaryContent.js";
@@ -47,6 +46,25 @@ type CelestialSphereScreenViewOptions = ScreenViewOptions & {
 
 const ROTATE_SPEED = 0.01;
 const MORPH_DURATION = 1.2; // seconds
+
+/** Fill the play area left of the control panel with the celestial sphere. */
+const layoutCelestialSphereProjection = (
+  layoutBounds: { minX: number; maxX: number; minY: number; maxY: number },
+  panelLeft: number,
+): { center: Vector2; radius: number } => {
+  const playLeft = layoutBounds.minX + SCREEN_VIEW_MARGIN;
+  const playRight = panelLeft - SCREEN_VIEW_MARGIN;
+  const playTop = layoutBounds.minY + SCREEN_VIEW_MARGIN;
+  const playBottom = layoutBounds.maxY - RESET_ALL_BUTTON_BOTTOM_MARGIN;
+
+  const playWidth = playRight - playLeft;
+  const playHeight = playBottom - playTop;
+  const radius = Math.min(playWidth / 2, playHeight / 2) * 0.96;
+  const centerX = (playLeft + playRight) / 2;
+  const centerY = (playTop + playBottom) / 2;
+
+  return { center: new Vector2(centerX, centerY), radius };
+};
 
 export class CelestialSphereScreenView extends ScreenView {
   private readonly projection: SkyProjection;
@@ -66,9 +84,52 @@ export class CelestialSphereScreenView extends ScreenView {
     });
     this.addChild(backgroundRect);
 
+    // ── Control panel (built first so the sphere can fill the remaining play area) ─
+    let morphAnimation: Animation | null = null;
+    const morphTo = (target: number): void => {
+      morphAnimation?.stop();
+      morphAnimation = new Animation({
+        property: model.systemBlendProperty,
+        to: target,
+        duration: MORPH_DURATION,
+        easing: Easing.CUBIC_IN_OUT,
+      });
+      morphAnimation.start();
+    };
+
+    const viewButtonLabel = new DerivedProperty(
+      [model.systemBlendProperty, controls.horizonViewStringProperty, controls.celestialSphereViewStringProperty],
+      (blend, horizon, celestial) => (blend < 0.5 ? horizon : celestial),
+    );
+    const viewButton = new RectangularPushButton({
+      ...FLAT_RECTANGULAR_BUTTON_OPTIONS,
+      content: new Text(viewButtonLabel, { font: new PhetFont(CONTROL_FONT_SIZE), fill: "#000000" }),
+      listener: () => morphTo(model.systemBlendProperty.value < 0.5 ? 1 : 0),
+      accessibleName: viewButtonLabel,
+    });
+
+    const timeControl = new TimeControlNode(sky.timer.isPlayingProperty, {
+      timeSpeedProperty: sky.timeSpeedProperty,
+      ...TIME_CONTROL_SPEED_RADIO_OPTIONS,
+      playPauseStepButtonOptions: {
+        ...FLAT_PLAY_PAUSE_STEP_BUTTON_OPTIONS,
+        stepForwardButtonOptions: {
+          ...FLAT_PLAY_PAUSE_STEP_BUTTON_OPTIONS.stepForwardButtonOptions,
+          listener: () => sky.stepForward(),
+        },
+      },
+    });
+
+    const panel = new RotatingSkyPanel(
+      new VBox({ align: "left", spacing: PANEL_CONTENT_SPACING, children: [viewButton, timeControl] }),
+    );
+    panel.right = this.layoutBounds.maxX - SCREEN_VIEW_MARGIN;
+    panel.top = this.layoutBounds.minY + SCREEN_VIEW_MARGIN;
+
+    const { center, radius } = layoutCelestialSphereProjection(this.layoutBounds, panel.left);
     this.projection = new SkyProjection({
-      center: new Vector2(this.layoutBounds.centerX - 110, this.layoutBounds.centerY),
-      radius: SPHERE_RADIUS,
+      center,
+      radius,
       elevation: -0.35,
       azimuth: 0,
     });
@@ -133,47 +194,6 @@ export class CelestialSphereScreenView extends ScreenView {
       }),
     );
 
-    // ── Morph control + animation ───────────────────────────────────────────────
-    let morphAnimation: Animation | null = null;
-    const morphTo = (target: number): void => {
-      morphAnimation?.stop();
-      morphAnimation = new Animation({
-        property: model.systemBlendProperty,
-        to: target,
-        duration: MORPH_DURATION,
-        easing: Easing.CUBIC_IN_OUT,
-      });
-      morphAnimation.start();
-    };
-
-    const viewButtonLabel = new DerivedProperty(
-      [model.systemBlendProperty, controls.horizonViewStringProperty, controls.celestialSphereViewStringProperty],
-      (blend, horizon, celestial) => (blend < 0.5 ? horizon : celestial),
-    );
-    const viewButton = new RectangularPushButton({
-      ...FLAT_RECTANGULAR_BUTTON_OPTIONS,
-      content: new Text(viewButtonLabel, { font: new PhetFont(CONTROL_FONT_SIZE), fill: "#000000" }),
-      listener: () => morphTo(model.systemBlendProperty.value < 0.5 ? 1 : 0),
-      accessibleName: viewButtonLabel,
-    });
-
-    const timeControl = new TimeControlNode(sky.timer.isPlayingProperty, {
-      timeSpeedProperty: sky.timeSpeedProperty,
-      ...TIME_CONTROL_SPEED_RADIO_OPTIONS,
-      playPauseStepButtonOptions: {
-        ...FLAT_PLAY_PAUSE_STEP_BUTTON_OPTIONS,
-        stepForwardButtonOptions: {
-          ...FLAT_PLAY_PAUSE_STEP_BUTTON_OPTIONS.stepForwardButtonOptions,
-          listener: () => sky.stepForward(),
-        },
-      },
-    });
-
-    const panel = new RotatingSkyPanel(
-      new VBox({ align: "left", spacing: PANEL_CONTENT_SPACING, children: [viewButton, timeControl] }),
-    );
-    panel.right = this.layoutBounds.maxX - SCREEN_VIEW_MARGIN;
-    panel.top = this.layoutBounds.minY + SCREEN_VIEW_MARGIN;
     this.addChild(panel);
 
     const resetAllButton = new ResetAllButton({
