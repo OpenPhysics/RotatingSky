@@ -14,9 +14,118 @@ import { Circle, DragListener, KeyboardListener, Line, Node, Path, Rectangle } f
 import { StringManager } from "../../i18n/StringManager.js";
 import RotatingSkyColors from "../../RotatingSkyColors.js";
 import { LATITUDE_RANGE, LOCATION_STEP_DEGREES, LONGITUDE_RANGE } from "../../RotatingSkyConstants.js";
-import { EARTH_SHORE_POLYGONS } from "./EarthShoreData.js";
+import { EARTH_SHORE_POLYGONS, type EarthShorePoint } from "./EarthShoreData.js";
 
 export type FlatEarthMapNodeOptions = { width: number; height: number };
+
+type GeoPoint = { lon: number; lat: number };
+
+const shorePointToGeo = (point: EarthShorePoint): GeoPoint => ({
+  lon: Math.atan2(point.y, point.x) * (180 / Math.PI),
+  lat: Math.asin(point.z) * (180 / Math.PI),
+});
+
+/** True when the short map edge between two lon/lats crosses the antimeridian. */
+const crossesDateline = (from: GeoPoint, to: GeoPoint): boolean => Math.abs(to.lon - from.lon) > 180;
+
+/** Degrees traveled eastward from `from` to `to` (mod 360). */
+const eastwardArc = (from: GeoPoint, to: GeoPoint): number => (to.lon - from.lon + 360) % 360;
+
+/** Standard shore polygons: split at the dateline so each subpath closes locally. */
+const addSplitShorePolygonToShape = (
+  shape: Shape,
+  polygon: readonly EarthShorePoint[],
+  lonToX: (lon: number) => number,
+  latToY: (lat: number) => number,
+): void => {
+  let previousLon: number | null = null;
+  let penDown = false;
+
+  for (const point of polygon) {
+    const { lon, lat } = shorePointToGeo(point);
+    if (previousLon !== null && Math.abs(lon - previousLon) > 180) {
+      if (penDown) {
+        shape.close();
+      }
+      penDown = false;
+    }
+    if (penDown) {
+      shape.lineTo(lonToX(lon), latToY(lat));
+    } else {
+      shape.moveTo(lonToX(lon), latToY(lat));
+      penDown = true;
+    }
+    previousLon = lon;
+  }
+
+  if (penDown) {
+    shape.close();
+  }
+};
+
+/**
+ * Southern-cap shore polygons (Antarctica): keep one continuous path, route dateline
+ * crossings through the south-pole map edge, and close along the bottom.
+ */
+const addSouthCapShorePolygonToShape = (
+  shape: Shape,
+  polygon: readonly EarthShorePoint[],
+  lonToX: (lon: number) => number,
+  latToY: (lat: number) => number,
+  width: number,
+  height: number,
+): void => {
+  const points = polygon.map(shorePointToGeo);
+  const first = points[0] as GeoPoint;
+
+  const appendSouthCapEdge = (from: GeoPoint, to: GeoPoint): void => {
+    if (crossesDateline(from, to)) {
+      const westward = eastwardArc(from, to) > 180;
+      const exitEdgeX = westward ? 0 : width;
+      shape.lineTo(exitEdgeX, latToY(from.lat));
+      shape.lineTo(exitEdgeX, height);
+      // Stop at the target longitude — not the far map edge — so the closing
+      // edge does not retrace this bottom segment and leave a fill notch.
+      shape.lineTo(lonToX(to.lon), height);
+    }
+    shape.lineTo(lonToX(to.lon), latToY(to.lat));
+  };
+
+  shape.moveTo(lonToX(first.lon), latToY(first.lat));
+  for (let i = 1; i < points.length; i++) {
+    const from = points[i - 1];
+    const to = points[i];
+    if (from && to) {
+      appendSouthCapEdge(from, to);
+    }
+  }
+
+  // Close directly between adjacent coast points; the dateline edge already
+  // traced the south-pole map edge, so routing the close through the bottom
+  // again would retrace that segment backwards and leave a fill notch.
+  shape.close();
+};
+
+/** Add one NAAP shore polygon to the flat map shape. */
+const addShorePolygonToShape = (
+  shape: Shape,
+  polygon: readonly EarthShorePoint[],
+  lonToX: (lon: number) => number,
+  latToY: (lat: number) => number,
+  width: number,
+  height: number,
+): void => {
+  if (polygon.length === 0) {
+    return;
+  }
+
+  const minLat = Math.min(...polygon.map((point) => shorePointToGeo(point).lat));
+  if (minLat < -60) {
+    addSouthCapShorePolygonToShape(shape, polygon, lonToX, latToY, width, height);
+  } else {
+    addSplitShorePolygonToShape(shape, polygon, lonToX, latToY);
+  }
+};
 
 export class FlatEarthMapNode extends Node {
   public constructor(
@@ -41,28 +150,7 @@ export class FlatEarthMapNode extends Node {
 
     const land = new Shape();
     for (const polygon of EARTH_SHORE_POLYGONS) {
-      let previousLon: number | null = null;
-      let penDown = false;
-      for (const point of polygon) {
-        const lon = Math.atan2(point.y, point.x) * (180 / Math.PI);
-        const lat = Math.asin(point.z) * (180 / Math.PI);
-        if (previousLon !== null && Math.abs(lon - previousLon) > 180) {
-          if (penDown) {
-            land.close();
-          }
-          penDown = false;
-        }
-        if (penDown) {
-          land.lineTo(lonToX(lon), latToY(lat));
-        } else {
-          land.moveTo(lonToX(lon), latToY(lat));
-          penDown = true;
-        }
-        previousLon = lon;
-      }
-      if (penDown) {
-        land.close();
-      }
+      addShorePolygonToShape(land, polygon, lonToX, latToY, width, height);
     }
     const landPath = new Path(land, {
       fill: RotatingSkyColors.earthLandColorProperty,
