@@ -16,7 +16,7 @@ import RotatingSkyColors from "../../RotatingSkyColors.js";
 import { raDecToVector3 } from "../SkyCoordinates.js";
 import type { SkyProjection } from "../SkyProjection.js";
 import { EARTH_SHORE_POLYGONS, type EarthShorePoint } from "./EarthShoreData.js";
-import { smallCirclePoints } from "./skyGraphics.js";
+import { addFrontHemispherePolyline, addFrontHemisphereSphericalPolygon, smallCirclePoints } from "./skyGraphics.js";
 
 const NCP = new Vector3(0, 0, 1);
 const GLOBE_SCALE = 0.28; // fraction of the celestial-sphere radius
@@ -68,50 +68,24 @@ export class EarthGlobeNode extends Node {
       };
     };
 
-    const addFrontPolyline = (shape: Shape, points: Vector3[]): void => {
-      let penDown = false;
-      for (const v of points) {
-        const { point, front } = toGlobe(v);
-        if (!front) {
-          penDown = false;
-          continue;
-        }
-        if (penDown) {
-          shape.lineToPoint(point);
-        } else {
-          shape.moveToPoint(point);
-          penDown = true;
-        }
-      }
+    const mapGlobePoint = (v: Vector3): Vector2 => toGlobe(v).point;
+
+    const applyGlobeClip = (): void => {
+      const clip = Shape.circle(projection.center.x, projection.center.y, globeRadius);
+      landPath.clipArea = clip;
+      gridPath.clipArea = clip;
     };
 
     const addFrontLandPolygon = (shape: Shape, polygon: readonly EarthShorePoint[], lst: number): void => {
-      let penDown = false;
-      for (const point of polygon) {
-        const projected = toGlobe(shorePointToVector(point, lst));
-        if (!projected.front) {
-          if (penDown) {
-            shape.close();
-          }
-          penDown = false;
-          continue;
-        }
-        if (penDown) {
-          shape.lineToPoint(projected.point);
-        } else {
-          shape.moveToPoint(projected.point);
-          penDown = true;
-        }
-      }
-      if (penDown) {
-        shape.close();
-      }
+      const vertices = polygon.map((point) => shorePointToVector(point, lst));
+      addFrontHemisphereSphericalPolygon(projection, vertices, shape, mapGlobePoint);
     };
 
     Multilink.multilink(
       [projection.viewMatrixProperty, latitudeProperty, siderealTimeProperty],
       (_m, latitude, lst) => {
         disc.center = projection.center;
+        applyGlobeClip();
 
         const landShape = new Shape();
         for (const polygon of EARTH_SHORE_POLYGONS) {
@@ -120,13 +94,13 @@ export class EarthGlobeNode extends Node {
         landPath.shape = landShape;
 
         const shape = new Shape();
-        addFrontPolyline(shape, smallCirclePoints(NCP, 90)); // equator
+        addFrontHemispherePolyline(projection, smallCirclePoints(NCP, 90), shape, mapGlobePoint); // equator
         for (const lon of GLOBE_LONGITUDES) {
           const points: Vector3[] = [];
           for (let dec = -90; dec <= 90; dec += 7.5) {
             points.push(raDecToVector3(lst + (lon / 360) * 24, dec));
           }
-          addFrontPolyline(shape, points);
+          addFrontHemispherePolyline(projection, points, shape, mapGlobePoint);
         }
         gridPath.shape = shape;
 

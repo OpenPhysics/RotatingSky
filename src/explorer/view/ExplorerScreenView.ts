@@ -7,7 +7,7 @@
  * over four control panels:
  *
  *   - Observer's Location: a flat Earth map plus latitude / longitude controls,
- *   - Animation Controls: play / step plus a continuous rate slider,
+ *   - Animation Controls: play / step, an animation-time picker, plus a continuous rate slider,
  *   - Appearance Settings: eight toggles for the sky overlays,
  *   - Star Controls: a star-pattern picker, add / remove, and trail length.
  *
@@ -22,7 +22,7 @@ import { NumberControl, PhetFont, ResetAllButton, TimeControlNode } from "scener
 import type { ScreenViewOptions } from "scenerystack/sim";
 import { ScreenView } from "scenerystack/sim";
 import { Checkbox, ComboBox, HSlider, RectangularPushButton, VerticalAquaRadioButtonGroup } from "scenerystack/sun";
-import type { SkyModel, StarTrailMode } from "../../common/model/SkyModel.js";
+import type { AnimationDuration, SkyModel, StarTrailMode } from "../../common/model/SkyModel.js";
 import {
   BIG_DIPPER,
   CASSIOPEIA,
@@ -34,6 +34,8 @@ import {
   FLAT_PLAY_PAUSE_STEP_BUTTON_OPTIONS,
   FLAT_RECTANGULAR_BUTTON_OPTIONS,
   FLAT_RESET_ALL_BUTTON_OPTIONS,
+  LIGHT_SURFACE_TEXT_FILL,
+  ROTATING_SKY_COMBO_BOX_OPTIONS,
 } from "../../common/RotatingSkyButtonOptions.js";
 import { RotatingSkyPanel } from "../../common/RotatingSkyPanel.js";
 import {
@@ -73,7 +75,6 @@ import { ExplorerScreenSummaryContent } from "./ExplorerScreenSummaryContent.js"
 
 const ROTATE_SPEED = 0.01;
 const SPHERE_RADIUS = 118;
-const BUTTON_TEXT_FILL = "#000000";
 
 export class ExplorerScreenView extends ScreenView {
   private readonly sky: SkyModel;
@@ -231,7 +232,7 @@ export class ExplorerScreenView extends ScreenView {
     const pushButton = (labelProperty: typeof controls.addStarRandomlyStringProperty, listener: () => void) =>
       new RectangularPushButton({
         ...FLAT_RECTANGULAR_BUTTON_OPTIONS,
-        content: new Text(labelProperty, { font: new PhetFont(13), fill: BUTTON_TEXT_FILL }),
+        content: new Text(labelProperty, { font: new PhetFont(13), fill: LIGHT_SURFACE_TEXT_FILL }),
         listener,
         accessibleName: labelProperty,
       });
@@ -264,6 +265,9 @@ export class ExplorerScreenView extends ScreenView {
       }),
     );
 
+    // Combo-box dropdown lists float above the panels in this parent.
+    const listParent = new Node();
+
     // ── Animation Controls panel ─────────────────────────────────────────────────
     const timeControl = new TimeControlNode(sky.timer.isPlayingProperty, {
       playPauseStepButtonOptions: {
@@ -280,6 +284,31 @@ export class ExplorerScreenView extends ScreenView {
     });
     const endLabel = (labelProperty: typeof controls.slowerStringProperty): Text =>
       new Text(labelProperty, { font: new PhetFont(11), fill: textFill });
+    const animationDurationChoices: {
+      duration: AnimationDuration;
+      labelProperty: typeof controls.animationTimeContinuousStringProperty;
+    }[] = [
+      { duration: "continuous", labelProperty: controls.animationTimeContinuousStringProperty },
+      { duration: "1hour", labelProperty: controls.animationTime1HourStringProperty },
+      { duration: "3hours", labelProperty: controls.animationTime3HoursStringProperty },
+      { duration: "6hours", labelProperty: controls.animationTime6HoursStringProperty },
+      { duration: "12hours", labelProperty: controls.animationTime12HoursStringProperty },
+      { duration: "24hours", labelProperty: controls.animationTime24HoursStringProperty },
+    ];
+    const durationCombo = new ComboBox<AnimationDuration>(
+      sky.animationDurationProperty,
+      animationDurationChoices.map(({ duration, labelProperty }) => ({
+        value: duration,
+        createNode: () => new Text(labelProperty, { font: new PhetFont(12), fill: LIGHT_SURFACE_TEXT_FILL }),
+        accessibleName: labelProperty,
+      })),
+      listParent,
+      {
+        ...ROTATING_SKY_COMBO_BOX_OPTIONS,
+        listPosition: "above",
+        accessibleName: controls.animationTimeStringProperty,
+      },
+    );
     const animationPanel = new RotatingSkyPanel(
       new VBox({
         align: "center",
@@ -287,6 +316,8 @@ export class ExplorerScreenView extends ScreenView {
         children: [
           panelTitle(controls.animationControlsStringProperty),
           timeControl,
+          new Text(controls.animationTimeStringProperty, { font: new PhetFont(12), fill: textFill }),
+          durationCombo,
           new Text(controls.animationRateStringProperty, { font: new PhetFont(12), fill: textFill }),
           new HBox({
             spacing: 6,
@@ -325,7 +356,6 @@ export class ExplorerScreenView extends ScreenView {
     );
 
     // ── Star Controls panel ──────────────────────────────────────────────────────
-    const listParent = new Node();
     const patterns: StarPattern[] = [
       { key: "bigDipper", nameProperty: controls.patternBigDipperStringProperty, stars: BIG_DIPPER },
       { key: "orionsBelt", nameProperty: controls.patternOrionsBeltStringProperty, stars: ORIONS_BELT },
@@ -346,17 +376,21 @@ export class ExplorerScreenView extends ScreenView {
         {
           value: null,
           createNode: () =>
-            new Text(controls.starPatternsStringProperty, { font: new PhetFont(13), fill: BUTTON_TEXT_FILL }),
+            new Text(controls.starPatternsStringProperty, { font: new PhetFont(13), fill: LIGHT_SURFACE_TEXT_FILL }),
           accessibleName: controls.starPatternsStringProperty,
         },
         ...patterns.map((pattern) => ({
           value: pattern as StarPattern | null,
-          createNode: () => new Text(pattern.nameProperty, { font: new PhetFont(13), fill: BUTTON_TEXT_FILL }),
+          createNode: () => new Text(pattern.nameProperty, { font: new PhetFont(13), fill: LIGHT_SURFACE_TEXT_FILL }),
           accessibleName: pattern.nameProperty,
         })),
       ],
       listParent,
-      { listPosition: "above", accessibleName: controls.starPatternsStringProperty },
+      {
+        ...ROTATING_SKY_COMBO_BOX_OPTIONS,
+        listPosition: "above",
+        accessibleName: controls.starPatternsStringProperty,
+      },
     );
 
     const addStarButton = pushButton(controls.addStarRandomlyStringProperty, () => sky.addRandomStar());
@@ -434,6 +468,7 @@ export class ExplorerScreenView extends ScreenView {
           latitudeControl,
           longitudeControl,
           timeControl,
+          durationCombo,
           rateSlider,
           ...appearanceCheckboxes,
           patternCombo,

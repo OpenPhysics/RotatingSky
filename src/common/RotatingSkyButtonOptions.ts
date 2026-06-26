@@ -7,12 +7,26 @@
  */
 
 import type { PlayPauseStepButtonGroupOptions, TimeControlNodeOptions } from "scenerystack/scenery-phet";
-import { ButtonNode } from "scenerystack/sun";
+import { ButtonNode, type ComboBoxOptions } from "scenerystack/sun";
 import RotatingSkyColors from "../RotatingSkyColors.js";
 
 export const FLAT_BUTTON_APPEARANCE_OPTIONS = {
   buttonAppearanceStrategy: ButtonNode.FlatAppearanceStrategy,
 } as const;
+
+/** Text on flat push buttons and combo-box items (always on a light control surface). */
+export const LIGHT_SURFACE_TEXT_FILL = "#1a1a1a";
+
+/**
+ * Combo-box chrome for panels. Item labels must use {@link LIGHT_SURFACE_TEXT_FILL}, not
+ * {@link RotatingSkyColors.textColorProperty} — that color is for labels on the dark panel fill.
+ */
+export const ROTATING_SKY_COMBO_BOX_OPTIONS = {
+  buttonFill: "white",
+  listFill: "white",
+  buttonStroke: RotatingSkyColors.panelBorderColorProperty,
+  listStroke: RotatingSkyColors.panelBorderColorProperty,
+} satisfies Pick<ComboBoxOptions, "buttonFill" | "listFill" | "buttonStroke" | "listStroke">;
 
 /** Options for RectangularPushButton and NumberControl arrow buttons. */
 export const FLAT_RECTANGULAR_BUTTON_OPTIONS = FLAT_BUTTON_APPEARANCE_OPTIONS;

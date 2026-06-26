@@ -41,6 +41,28 @@ import type { StarPatternStar } from "./StarPatterns.js";
 /** How much of each star's recent path to draw as a trail. */
 export type StarTrailMode = "none" | "short" | "long";
 
+/** How long a play segment runs before auto-pausing; `continuous` has no limit. */
+export type AnimationDuration = "continuous" | "1hour" | "3hours" | "6hours" | "12hours" | "24hours";
+
+/** Combo-box choices for {@link AnimationDuration}, in display order. */
+export const ANIMATION_DURATION_OPTIONS: readonly AnimationDuration[] = [
+  "continuous",
+  "1hour",
+  "3hours",
+  "6hours",
+  "12hours",
+  "24hours",
+];
+
+const ANIMATION_DURATION_HOURS = new Map<AnimationDuration, number | null>([
+  ["continuous", null],
+  ["1hour", 1],
+  ["3hours", 3],
+  ["6hours", 6],
+  ["12hours", 12],
+  ["24hours", 24],
+]);
+
 export type SkyModelOptions = {
   /** Default observer latitude (deg), from Preferences → query parameters. */
   defaultLatitudeProperty: TReadOnlyProperty<number>;
@@ -64,6 +86,9 @@ export class SkyModel implements TModel {
 
   /** Continuous animation-rate multiplier (the Explorer's "animation rate" slider). */
   public readonly animationRateProperty = new NumberProperty(1, { range: ANIMATION_RATE_RANGE });
+
+  /** Sidereal-hour span for each play segment; `continuous` runs until paused manually. */
+  public readonly animationDurationProperty = new Property<AnimationDuration>("continuous");
 
   /** Observer latitude in degrees, +N / −S. */
   public readonly latitudeProperty: NumberProperty;
@@ -121,12 +146,19 @@ export class SkyModel implements TModel {
   private readonly defaultLatitudeProperty: TReadOnlyProperty<number>;
   private readonly defaultLongitudeProperty: TReadOnlyProperty<number>;
 
+  /** Sidereal time when the current play segment started; null while paused. */
+  private animationPlayStartSiderealTime: number | null = null;
+
   public constructor(options: SkyModelOptions) {
     this.defaultLatitudeProperty = options.defaultLatitudeProperty;
     this.defaultLongitudeProperty = options.defaultLongitudeProperty;
 
     this.latitudeProperty = new NumberProperty(options.defaultLatitudeProperty.value, { range: LATITUDE_RANGE });
     this.longitudeProperty = new NumberProperty(options.defaultLongitudeProperty.value, { range: LONGITUDE_RANGE });
+
+    this.timer.isPlayingProperty.link((isPlaying) => {
+      this.animationPlayStartSiderealTime = isPlaying ? this.siderealTimeProperty.value : null;
+    });
   }
 
   // ── Stars ──────────────────────────────────────────────────────────────────
@@ -198,13 +230,40 @@ export class SkyModel implements TModel {
 
   /** One step-forward press (used by the TimeControlNode step button). */
   public stepForward(): void {
-    this.advanceSiderealTime(this.speedMultiplier * SIDEREAL_HOURS_PER_SECOND);
+    const increment = this.speedMultiplier * SIDEREAL_HOURS_PER_SECOND;
+    if (this.timer.isPlayingProperty.value) {
+      this.advancePlayingTime(increment);
+    } else {
+      this.advanceSiderealTime(increment);
+    }
   }
 
   public step(dt: number): void {
     this.timer.step(dt);
     if (this.timer.isPlayingProperty.value) {
-      this.advanceSiderealTime(dt * SIDEREAL_HOURS_PER_SECOND * this.speedMultiplier);
+      this.advancePlayingTime(dt * SIDEREAL_HOURS_PER_SECOND * this.speedMultiplier);
+    }
+  }
+
+  /** Advances sidereal time while playing, pausing once the duration limit is reached. */
+  private advancePlayingTime(siderealHours: number): void {
+    const limitHours = ANIMATION_DURATION_HOURS.get(this.animationDurationProperty.value) ?? null;
+    if (limitHours === null || this.animationPlayStartSiderealTime === null) {
+      this.advanceSiderealTime(siderealHours);
+      return;
+    }
+
+    const elapsed = siderealHoursElapsed(this.animationPlayStartSiderealTime, this.siderealTimeProperty.value);
+    const remaining = limitHours - elapsed;
+    if (remaining <= 0) {
+      this.timer.isPlayingProperty.value = false;
+      return;
+    }
+
+    const advance = Math.min(siderealHours, remaining);
+    this.advanceSiderealTime(advance);
+    if (advance >= remaining) {
+      this.timer.isPlayingProperty.value = false;
     }
   }
 
@@ -212,6 +271,7 @@ export class SkyModel implements TModel {
     this.timer.reset();
     this.timeSpeedProperty.reset();
     this.animationRateProperty.reset();
+    this.animationDurationProperty.reset();
     // Reset to the *current* preference defaults so newly reset screens follow them.
     this.latitudeProperty.value = this.defaultLatitudeProperty.value;
     this.longitudeProperty.value = normalizeDegrees(this.defaultLongitudeProperty.value + 180) - 180;
@@ -230,4 +290,10 @@ export class SkyModel implements TModel {
     this.equatorHorizonAngleVisibleProperty.reset();
     this.removeAllStars();
   }
+}
+
+/** Sidereal hours advanced from `startHours` to `currentHours`, accounting for midnight wrap. */
+function siderealHoursElapsed(startHours: number, currentHours: number): number {
+  const delta = currentHours - startHours;
+  return delta >= 0 ? delta : delta + HOURS_PER_DAY;
 }

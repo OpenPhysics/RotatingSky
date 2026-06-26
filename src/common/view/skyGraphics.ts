@@ -48,6 +48,141 @@ export const smallCirclePoints = (axis: Vector3, polarAngleDeg: number, samples 
 
 export type SplitShapes = { front: Shape; back: Shape };
 
+/** Camera-space depth of a world point (≥ 0 ⇒ front hemisphere). */
+export const worldDepth = (projection: SkyProjection, point: Vector3): number =>
+  projection.viewMatrixProperty.value.timesVector3(point).y;
+
+/** World point where the segment crosses the view horizon (depth = 0). */
+const clipAtHorizon = (a: Vector3, b: Vector3, depthA: number, depthB: number): Vector3 => {
+  const t = depthA / (depthA - depthB);
+  return a.plus(b.minus(a).timesScalar(t)).normalized();
+};
+
+const midpointOnSphere = (a: Vector3, b: Vector3): Vector3 => a.plus(b).normalized();
+
+const sphericalCentroid = (vertices: Vector3[]): Vector3 | null => {
+  let sum = Vector3.ZERO;
+  for (const vertex of vertices) {
+    sum = sum.plus(vertex);
+  }
+  return sum.magnitude > 1e-6 ? sum.normalized() : null;
+};
+
+const addFrontHemisphereTriangle = (
+  projection: SkyProjection,
+  a: Vector3,
+  b: Vector3,
+  c: Vector3,
+  shape: Shape,
+  mapPoint: (point: Vector3) => Vector2,
+  subdivision = 0,
+): void => {
+  const dA = worldDepth(projection, a);
+  const dB = worldDepth(projection, b);
+  const dC = worldDepth(projection, c);
+
+  if (dA < 0 && dB < 0 && dC < 0) {
+    return;
+  }
+  if (dA >= 0 && dB >= 0 && dC >= 0) {
+    shape.moveToPoint(mapPoint(a));
+    shape.lineToPoint(mapPoint(b));
+    shape.lineToPoint(mapPoint(c));
+    shape.close();
+    return;
+  }
+  if (subdivision >= 5) {
+    return;
+  }
+
+  const ab = midpointOnSphere(a, b);
+  const bc = midpointOnSphere(b, c);
+  const ca = midpointOnSphere(c, a);
+  addFrontHemisphereTriangle(projection, a, ab, ca, shape, mapPoint, subdivision + 1);
+  addFrontHemisphereTriangle(projection, ab, b, bc, shape, mapPoint, subdivision + 1);
+  addFrontHemisphereTriangle(projection, ca, bc, c, shape, mapPoint, subdivision + 1);
+  addFrontHemisphereTriangle(projection, ab, bc, ca, shape, mapPoint, subdivision + 1);
+};
+
+/**
+ * Fills the near-hemisphere portion of a spherical polygon by fan-triangulating
+ * on the surface and recursively subdividing triangles that cross the view horizon.
+ */
+export const addFrontHemisphereSphericalPolygon = (
+  projection: SkyProjection,
+  vertices: Vector3[],
+  shape: Shape,
+  mapPoint: (point: Vector3) => Vector2,
+): void => {
+  if (vertices.length < 3) {
+    return;
+  }
+  const centroid = sphericalCentroid(vertices);
+  if (!centroid) {
+    return;
+  }
+  for (let i = 0; i < vertices.length; i++) {
+    const a = vertices[i];
+    const b = vertices[(i + 1) % vertices.length];
+    if (a && b) {
+      addFrontHemisphereTriangle(projection, centroid, a, b, shape, mapPoint);
+    }
+  }
+};
+
+/**
+ * Appends only the near-hemisphere portion of a polyline, clipping each segment
+ * at the view horizon so chords never cut across the sphere interior.
+ */
+export const addFrontHemispherePolyline = (
+  projection: SkyProjection,
+  points: Vector3[],
+  shape: Shape,
+  mapPoint: (point: Vector3) => Vector2,
+): void => {
+  if (points.length === 0) {
+    return;
+  }
+
+  let penDown = false;
+  const [first, ...rest] = points;
+  if (!first) {
+    return;
+  }
+  let previous = first;
+  let previousDepth = worldDepth(projection, previous);
+
+  for (const point of rest) {
+    const depth = worldDepth(projection, point);
+    const previousFront = previousDepth >= 0;
+    const front = depth >= 0;
+
+    if (previousFront && front) {
+      if (!penDown) {
+        shape.moveToPoint(mapPoint(previous));
+        penDown = true;
+      }
+      shape.lineToPoint(mapPoint(point));
+    } else if (previousFront && !front) {
+      if (!penDown) {
+        shape.moveToPoint(mapPoint(previous));
+        penDown = true;
+      }
+      shape.lineToPoint(mapPoint(clipAtHorizon(previous, point, previousDepth, depth)));
+      penDown = false;
+    } else if (!previousFront && front) {
+      shape.moveToPoint(mapPoint(clipAtHorizon(previous, point, previousDepth, depth)));
+      penDown = true;
+      shape.lineToPoint(mapPoint(point));
+    } else {
+      penDown = false;
+    }
+
+    previous = point;
+    previousDepth = depth;
+  }
+};
+
 /**
  * Appends a projected polyline to the given `front` / `back` shapes, routing each
  * segment by its camera-space depth (≥ 0 ⇒ front hemisphere). Lets callers merge

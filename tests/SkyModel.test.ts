@@ -97,4 +97,38 @@ describe("SkyModel time", () => {
     model.resetStarTrails();
     expect(model.trailStartTimeProperty.value).toBeCloseTo(5);
   });
+
+  it("auto-pauses after the selected animation duration elapses", () => {
+    const model = makeModel();
+    model.animationDurationProperty.value = "3hours";
+    model.timer.isPlayingProperty.value = true;
+    model.step(1);
+    expect(model.siderealTimeProperty.value).toBeCloseTo(1);
+    expect(model.timer.isPlayingProperty.value).toBe(true);
+    model.step(1);
+    expect(model.siderealTimeProperty.value).toBeCloseTo(2);
+    expect(model.timer.isPlayingProperty.value).toBe(true);
+    model.step(1);
+    expect(model.siderealTimeProperty.value).toBeCloseTo(3);
+    expect(model.timer.isPlayingProperty.value).toBe(false);
+  });
+
+  it("runs without a duration limit when set to continuous", () => {
+    const model = makeModel();
+    model.animationDurationProperty.value = "continuous";
+    model.timer.isPlayingProperty.value = true;
+    model.step(3);
+    expect(model.siderealTimeProperty.value).toBeCloseTo(3);
+    expect(model.timer.isPlayingProperty.value).toBe(true);
+  });
+
+  it("wraps duration accounting across midnight", () => {
+    const model = makeModel();
+    model.siderealTimeProperty.value = 23;
+    model.animationDurationProperty.value = "3hours";
+    model.timer.isPlayingProperty.value = true;
+    model.step(3);
+    expect(model.siderealTimeProperty.value).toBeCloseTo(2);
+    expect(model.timer.isPlayingProperty.value).toBe(false);
+  });
 });
