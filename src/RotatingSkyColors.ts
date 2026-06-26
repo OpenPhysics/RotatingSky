@@ -184,8 +184,8 @@ const RotatingSkyColors = {
 
   /** The observer stick figure on the horizon ground disk. */
   observerFigureColorProperty: new ProfileColorProperty(RotatingSkyNamespace, "observerFigure", {
-    default: "#1a1a1a",
-    projector: "#1a1a1a",
+    default: "#ffffff",
+    projector: "#000000",
   }),
 };
 
