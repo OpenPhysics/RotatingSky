@@ -52,6 +52,12 @@
     "showRiseSet": "Afficher les étoiles de lever et coucher",
     "showCircumpolar": "Afficher les étoiles circumpolaires",
     "hideBelowHorizon": "Masquer sous l'horizon",
+    "showHorizonPlane": "Afficher le plan de l'horizon",
+    "showGridLines": "Afficher les lignes de la grille",
+    "showSphereOutline": "Afficher le contour de la sphère",
+    "starPosition": "Position de l'étoile",
+    "guideStarPosition": "Étoile guide à ascension droite {{ra}} heures, déclinaison {{dec}} degrés",
+    "guideStarHelp": "Utilisez les flèches pour déplacer l'étoile, ou faites-la glisser avec la souris.",
     "showEquatorHorizonAngle": "Afficher l'angle entre l'équateur céleste et l'horizon",
     "starControls": "Commandes des étoiles",
     "starPatterns": "Motifs d'étoiles…",
@@ -78,7 +84,7 @@
     "celestialSphere": {
       "screenSummary": {
         "playArea": "La zone de jeu montre la sphère céleste avec l'équateur céleste, l'écliptique, les pôles célestes et le plan de l'horizon de l'observateur qui la traverse.",
-        "controlArea": "La zone de contrôle permet de basculer entre la vue de la sphère céleste et la vue de l'horizon, d'animer le temps et de réinitialiser la simulation.",
+        "controlArea": "La zone de contrôle permet de régler la latitude, de basculer entre la vue de la sphère céleste et la vue de l'horizon, d'animer le temps, d'afficher ou de masquer l'équateur céleste, le cercle 0 h, la grille, le contour de la sphère, le plan de l'horizon, les étiquettes et les étoiles sous l'horizon, et de réinitialiser la simulation.",
         "interactionHint": "Explorez l'orientation de la sphère céleste par rapport à votre horizon."
       },
       "currentDetails": "L'observateur est à une latitude de {{latitude}} degrés. Le temps sidéral local est de {{time}} heures."

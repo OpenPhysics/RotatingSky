@@ -52,6 +52,12 @@
     "showRiseSet": "Show rise and set stars",
     "showCircumpolar": "Show circumpolar stars",
     "hideBelowHorizon": "Hide below horizon",
+    "showHorizonPlane": "Show horizon plane",
+    "showGridLines": "Show grid lines",
+    "showSphereOutline": "Show sphere outline",
+    "starPosition": "Star Position",
+    "guideStarPosition": "Guide star at right ascension {{ra}} hours, declination {{dec}} degrees",
+    "guideStarHelp": "Use the arrow keys to move the star, or drag it with the mouse.",
     "showEquatorHorizonAngle": "Show angle between celestial equator and horizon",
     "starControls": "Star Controls",
     "starPatterns": "Star Patterns…",
@@ -78,7 +84,7 @@
     "celestialSphere": {
       "screenSummary": {
         "playArea": "The play area shows the celestial sphere with the celestial equator, the ecliptic, the celestial poles, and the observer's horizon plane cutting through it.",
-        "controlArea": "The control area lets you switch between the celestial-sphere and horizon views, animate time, and reset the simulation.",
+        "controlArea": "The control area lets you set the latitude, switch between the celestial-sphere and horizon views, animate time, show or hide the celestial equator, the 0h circle, the grid, the sphere outline, the horizon plane, the labels, and stars below the horizon, and reset the simulation.",
         "interactionHint": "Explore how the celestial sphere is oriented relative to your horizon."
       },
       "currentDetails": "The observer is at latitude {{latitude}} degrees. The local sidereal time is {{time}} hours."

@@ -28,6 +28,10 @@ export type CelestialSphereNodeOptions = {
   celestialEquatorVisibleProperty?: TReadOnlyProperty<boolean>;
   /** Toggles the 0ʰ hour circle (RA = 0ʰ great circle). Defaults to always visible. */
   hourCircleVisibleProperty?: TReadOnlyProperty<boolean>;
+  /** Toggles the RA/Dec graticule (declination circles and RA meridians). Defaults to always visible. */
+  gridVisibleProperty?: TReadOnlyProperty<boolean>;
+  /** Toggles the celestial-sphere silhouette outline. Defaults to always visible. */
+  outlineVisibleProperty?: TReadOnlyProperty<boolean>;
 };
 
 const NCP = new Vector3(0, 0, 1);
@@ -153,6 +157,13 @@ export class CelestialSphereNode extends Node {
     options?.hourCircleVisibleProperty?.link((visible) => {
       hourCircleBackLayer.visible = visible;
       hourCircleFrontLayer.visible = visible;
+    });
+    options?.gridVisibleProperty?.link((visible) => {
+      gridFront.visible = visible;
+      gridBack.visible = visible;
+    });
+    options?.outlineVisibleProperty?.link((visible) => {
+      outline.visible = visible;
     });
     options?.labelsVisibleProperty?.link((visible) => {
       labels.visible = visible;

@@ -146,6 +146,18 @@ const RotatingSkyColors = {
     projector: "#1565c0",
   }),
 
+  /** Right-ascension guide line (constant-RA hour circle) for the coordinate explorer star. */
+  guideRaColorProperty: new ProfileColorProperty(RotatingSkyNamespace, "guideRa", {
+    default: "#5dade2",
+    projector: "#2471a3",
+  }),
+
+  /** Declination guide line (constant-Dec circle) for the coordinate explorer star. */
+  guideDecColorProperty: new ProfileColorProperty(RotatingSkyNamespace, "guideDec", {
+    default: "#ec7063",
+    projector: "#b03a2e",
+  }),
+
   /** Shaded circumpolar band (stars that never set). */
   bandCircumpolarColorProperty: new ProfileColorProperty(RotatingSkyNamespace, "bandCircumpolar", {
     default: "rgba(79,195,247,0.25)",

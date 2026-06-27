@@ -163,6 +163,17 @@ export class SkyModel implements TModel {
   /** Show the angle between the celestial equator and the horizon (= 90° − |lat|). */
   public readonly equatorHorizonAngleVisibleProperty = new BooleanProperty(false);
 
+  // ── Celestial Sphere appearance toggles ──────────────────────────────────────
+
+  /** Show the observer's horizon plane cutting through the celestial sphere. */
+  public readonly horizonPlaneVisibleProperty = new BooleanProperty(true);
+
+  /** Show the RA/Dec graticule (declination circles and RA meridians). */
+  public readonly gridVisibleProperty = new BooleanProperty(true);
+
+  /** Show the celestial-sphere silhouette outline. */
+  public readonly outlineVisibleProperty = new BooleanProperty(true);
+
   private readonly defaultLatitudeProperty: TReadOnlyProperty<number>;
   private readonly defaultLongitudeProperty: TReadOnlyProperty<number>;
 
@@ -332,6 +343,9 @@ export class SkyModel implements TModel {
     this.riseSetRegionVisibleProperty.reset();
     this.neverRiseRegionVisibleProperty.reset();
     this.equatorHorizonAngleVisibleProperty.reset();
+    this.horizonPlaneVisibleProperty.reset();
+    this.gridVisibleProperty.reset();
+    this.outlineVisibleProperty.reset();
     this.removeAllStars();
   }
 }

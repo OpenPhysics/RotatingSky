@@ -52,6 +52,12 @@
     "showRiseSet": "Mostrar estrellas de salida y puesta",
     "showCircumpolar": "Mostrar estrellas circumpolares",
     "hideBelowHorizon": "Ocultar bajo el horizonte",
+    "showHorizonPlane": "Mostrar plano del horizonte",
+    "showGridLines": "Mostrar líneas de cuadrícula",
+    "showSphereOutline": "Mostrar contorno de la esfera",
+    "starPosition": "Posición de la estrella",
+    "guideStarPosition": "Estrella guía en ascensión recta {{ra}} horas, declinación {{dec}} grados",
+    "guideStarHelp": "Usa las flechas para mover la estrella, o arrástrala con el ratón.",
     "showEquatorHorizonAngle": "Mostrar el ángulo entre el ecuador celeste y el horizonte",
     "starControls": "Controles de estrellas",
     "starPatterns": "Patrones de estrellas…",
@@ -78,7 +84,7 @@
     "celestialSphere": {
       "screenSummary": {
         "playArea": "El área de juego muestra la esfera celeste con el ecuador celeste, la eclíptica, los polos celestes y el plano del horizonte del observador que la atraviesa.",
-        "controlArea": "El área de control permite alternar entre la vista de la esfera celeste y la del horizonte, animar el tiempo y reiniciar la simulación.",
+        "controlArea": "El área de control permite ajustar la latitud, alternar entre la vista de la esfera celeste y la del horizonte, animar el tiempo, mostrar u ocultar el ecuador celeste, el círculo de 0 h, la cuadrícula, el contorno de la esfera, el plano del horizonte, las etiquetas y las estrellas bajo el horizonte, y reiniciar la simulación.",
         "interactionHint": "Explora cómo se orienta la esfera celeste respecto a tu horizonte."
       },
       "currentDetails": "El observador está a una latitud de {{latitude}} grados. El tiempo sidéreo local es de {{time}} horas."
