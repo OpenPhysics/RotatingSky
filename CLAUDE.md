@@ -35,6 +35,7 @@ Reference material for the port lives in the gitignored `NAAP/` directory
 | `src/<screen>/view/…ScreenSummaryContent.ts` | Per-screen accessible summary |
 | `src/<screen>/view/…KeyboardHelpContent.ts` | Per-screen keyboard-help dialog content |
 | `scripts/generate-icons.ts` | PNG app icons from `public/icons/icon.svg` |
+| `scripts/decompile-flash.ts` | Extract ActionScript from the NAAP Flash `.swf` sources via JPEXS FFDec (→ `NAAP/decompiled/`) |
 
 `<screen>` is one of `horizon-system`, `celestial-sphere`, `explorer`, with class
 prefixes `HorizonSystem`, `CelestialSphere`, `Explorer`.
@@ -89,3 +90,37 @@ thread that same instance through each per-screen model constructor — see the
 ## PWA
 
 After `npm run build`, the sim is installable offline via Workbox (`dist/manifest.webmanifest`).
+
+## Decompiling the Flash sources
+
+`npm run decompile` (script: `scripts/decompile-flash.ts`) extracts readable ActionScript
+from the NAAP Flash movies so the ported astronomy can be diffed against the originals.
+The `.fla` files are old binary (OLE compound) projects no tool reads directly, so the
+script decompiles their sibling compiled `.swf` (passing a `.fla` resolves to its `.swf`
+automatically) via **JPEXS FFDec**.
+
+```sh
+npm run decompile                 # the main explorer (celHorComp039-D) → NAAP/decompiled/<name>/scripts/*.as
+npm run decompile -- --all        # all Rotating-Sky-relevant movies (curated list below)
+npm run decompile -- --list       # dry run: print what would be decompiled, run nothing
+npm run decompile -- <path>…      # specific .swf / .fla / folder
+npm run decompile -- --assets     # also export images/shapes/sounds/text
+npm run decompile -- --xfl        # reconstruct an editable XFL project (closest to the .fla)
+```
+
+Output goes to `NAAP/decompiled/` (git-ignored). **One-time setup** — FFDec needs a Java
+runtime:
+
+```sh
+sudo apt install default-jre               # Debian/WSL (or: brew install temurin on macOS)
+npm run decompile -- --setup               # downloads FFDec into tools/ffdec/ (git-ignored)
+# …or point at an existing install instead: export FFDEC_JAR=/path/to/ffdec.jar
+```
+
+Run `npm run decompile -- --help` for all flags. The decompiled AS is a **read-only
+reference** (AS2, lightly mangled by the compiler) — transcribe the maths into typed TS in
+`src/`; don't vendor it. The curated `--all` set covers the main explorer
+(`celHorComp039-D`), the view components it composes (`flatSkyView`, `skyMap`,
+`celestial_sphere`, `simpleFlatSkyMap`), and supporting concept demos
+(`declination_ranges`, `siderealTimeAndHourAngleDemo`, `eduSkyMotion`,
+`celestialHorizon`, `diurnalMotion`, `zodiacSimulator`).

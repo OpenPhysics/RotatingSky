@@ -40,4 +40,7 @@ Thumbs.db
 
 # Local-only reference material (original NAAP Rotating Sky lab) — not part of the sim
 NAAP/
+
+# Flash decompilation tooling (npm run decompile) — downloaded FFDec
+tools/ffdec/
 .pw-shots/
