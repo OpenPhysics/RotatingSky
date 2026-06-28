@@ -60,6 +60,8 @@ type CelestialSphereScreenViewOptions = ScreenViewOptions & {
 };
 
 const ROTATE_SPEED = 0.01;
+/** Sidereal hours advanced per pixel of Ctrl-drag ("rotate about NCP" mode). */
+const TIME_DRAG_RATE = 0.02;
 const MORPH_DURATION = 1.2; // seconds
 const RA_RANGE = new Range(0, HOURS_PER_DAY);
 const DEC_RANGE = new Range(-90, 90);
@@ -371,19 +373,37 @@ export class CelestialSphereScreenView extends ScreenView {
     this.addChild(coordinateGuideNode.frontLayer);
     this.addChild(starsNode);
 
-    // Drag the background to rotate the camera.
+    // Drag the background to rotate the camera. Alt-drag spins about the vertical
+    // axis only ("rotate about zenith"); Ctrl-drag advances sidereal time
+    // ("rotate about NCP").
     let lastPoint: Vector2 | null = null;
+    let dragMode: "simple" | "zenith" | "ncp" = "simple";
     backgroundRect.addInputListener(
       new DragListener({
         start: (event) => {
+          const domEvent = event.domEvent as { altKey?: boolean; ctrlKey?: boolean; metaKey?: boolean } | null;
           lastPoint = event.pointer.point.copy();
+          dragMode = domEvent?.altKey ? "zenith" : domEvent?.ctrlKey || domEvent?.metaKey ? "ncp" : "simple";
         },
         drag: (event) => {
-          if (lastPoint) {
-            const p = event.pointer.point;
-            this.projection.rotateBy((p.x - lastPoint.x) * ROTATE_SPEED, (lastPoint.y - p.y) * ROTATE_SPEED);
-            lastPoint = p.copy();
+          if (!lastPoint) {
+            return;
           }
+          const p = event.pointer.point;
+          const dx = p.x - lastPoint.x;
+          const dy = lastPoint.y - p.y;
+          switch (dragMode) {
+            case "zenith":
+              this.projection.rotateAboutZenith(dx * ROTATE_SPEED);
+              break;
+            case "ncp":
+              sky.advanceSiderealTime(-dx * TIME_DRAG_RATE);
+              break;
+            default:
+              this.projection.rotateBy(dx * ROTATE_SPEED, dy * ROTATE_SPEED);
+              break;
+          }
+          lastPoint = p.copy();
         },
         end: () => {
           lastPoint = null;

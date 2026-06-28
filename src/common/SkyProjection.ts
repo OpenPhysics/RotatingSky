@@ -125,6 +125,15 @@ export class SkyProjection {
     this.elevationProperty.value = clamp(this.elevationProperty.value + deltaElevation, -MAX_ELEVATION, MAX_ELEVATION);
   }
 
+  /**
+   * Spins the camera about the world vertical (zenith / NCP) axis only, leaving
+   * the tilt unchanged. Activated by Alt-drag in the screen views — the NAAP
+   * "rotate about zenith" mode.
+   */
+  public rotateAboutZenith(deltaAzimuth: number): void {
+    this.azimuthProperty.value += deltaAzimuth;
+  }
+
   /** Restores the camera and frame to their initial orientation. */
   public reset(): void {
     this.azimuthProperty.reset();

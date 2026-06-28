@@ -75,6 +75,7 @@ import { HorizonDomeNode } from "../../common/view/HorizonDomeNode.js";
 import { HorizonGroundNode } from "../../common/view/HorizonGroundNode.js";
 import { HorizonObserverNode } from "../../common/view/HorizonObserverNode.js";
 import { HorizonPlaneNode } from "../../common/view/HorizonPlaneNode.js";
+import { SelectedStarCelestialArcsNode } from "../../common/view/SelectedStarCelestialArcsNode.js";
 import { SelectedStarHorizonArcsNode } from "../../common/view/SelectedStarHorizonArcsNode.js";
 import { SkyPatternLinesNode } from "../../common/view/SkyPatternLinesNode.js";
 import { SkyReadoutNode } from "../../common/view/SkyReadoutNode.js";
@@ -104,6 +105,8 @@ type ExplorerScreenViewOptions = ScreenViewOptions & {
 };
 
 const ROTATE_SPEED = 0.01;
+/** Sidereal hours advanced per pixel of Ctrl-drag ("rotate about NCP" mode). */
+const TIME_DRAG_RATE = 0.02;
 const SPHERE_RADIUS = 118;
 
 export class ExplorerScreenView extends ScreenView {
@@ -202,6 +205,8 @@ export class ExplorerScreenView extends ScreenView {
     this.addChild(celHorizonPlane.frontLayer);
     this.addChild(celPatternLines);
     this.addChild(celStars);
+    const celArcs = new SelectedStarCelestialArcsNode(this.celProjection, sky);
+    this.addChild(celArcs);
 
     const celReadout = new SkyReadoutNode(sky, { frame: "equatorial" });
     positionReadoutBelowProjection(celReadout, this.celProjection);
@@ -653,7 +658,8 @@ export class ExplorerScreenView extends ScreenView {
 
   /**
    * Transparent region behind a sphere: drag rotates the camera; shift-click adds
-   * a star at the clicked location.
+   * a star at the clicked location. Alt-drag spins about the vertical axis only
+   * ("rotate about zenith"); Ctrl-drag advances sidereal time ("rotate about NCP").
    */
   private addSphereInteraction(
     projection: SkyProjection,
@@ -665,10 +671,17 @@ export class ExplorerScreenView extends ScreenView {
     });
 
     let lastPoint: Vector2 | null = null;
+    let dragMode: "simple" | "zenith" | "ncp" = "simple";
     region.addInputListener(
       new DragListener({
         start: (event) => {
-          const shift = Boolean((event.domEvent as { shiftKey?: boolean } | null)?.shiftKey);
+          const domEvent = event.domEvent as {
+            shiftKey?: boolean;
+            altKey?: boolean;
+            ctrlKey?: boolean;
+            metaKey?: boolean;
+          } | null;
+          const shift = Boolean(domEvent?.shiftKey);
           if (shift) {
             const local = region.globalToParentPoint(event.pointer.point);
             const { raHours, decDeg } = pointToEquatorial(local);
@@ -676,14 +689,28 @@ export class ExplorerScreenView extends ScreenView {
             lastPoint = null;
           } else {
             lastPoint = event.pointer.point.copy();
+            dragMode = domEvent?.altKey ? "zenith" : domEvent?.ctrlKey || domEvent?.metaKey ? "ncp" : "simple";
           }
         },
         drag: (event) => {
-          if (lastPoint) {
-            const p = event.pointer.point;
-            projection.rotateBy((p.x - lastPoint.x) * ROTATE_SPEED, (lastPoint.y - p.y) * ROTATE_SPEED);
-            lastPoint = p.copy();
+          if (!lastPoint) {
+            return;
           }
+          const p = event.pointer.point;
+          const dx = p.x - lastPoint.x;
+          const dy = lastPoint.y - p.y;
+          switch (dragMode) {
+            case "zenith":
+              projection.rotateAboutZenith(dx * ROTATE_SPEED);
+              break;
+            case "ncp":
+              this.sky.advanceSiderealTime(-dx * TIME_DRAG_RATE);
+              break;
+            default:
+              projection.rotateBy(dx * ROTATE_SPEED, dy * ROTATE_SPEED);
+              break;
+          }
+          lastPoint = p.copy();
         },
         end: () => {
           lastPoint = null;

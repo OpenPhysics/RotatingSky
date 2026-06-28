@@ -25,6 +25,31 @@ const orthonormalBasis = (axis: Vector3): [Vector3, Vector3] => {
 };
 
 /**
+ * Samples points along the shorter great-circle arc from `p1` to `p2` (both unit
+ * vectors). The arc lies in the plane spanned by p1, p2 and the origin; its normal
+ * is p1 × p2. `samples` controls how many segments the arc is split into. Ports the
+ * NAAP `setArcPoints` great-circle-between-two-points behaviour.
+ */
+export const greatCircleArcPoints = (p1: Vector3, p2: Vector3, samples = 32): Vector3[] => {
+  const dot = Math.max(-1, Math.min(1, p1.dot(p2)));
+  const angle = Math.acos(dot);
+  if (angle < 1e-9) {
+    return [p1, p2];
+  }
+
+  // In-plane unit vector perpendicular to p1, pointing toward p2.
+  const normal = p1.cross(p2).normalized();
+  const perp = normal.cross(p1).normalized();
+
+  const points: Vector3[] = [];
+  for (let i = 0; i <= samples; i++) {
+    const t = (i / samples) * angle;
+    points.push(p1.timesScalar(Math.cos(t)).plus(perp.timesScalar(Math.sin(t))));
+  }
+  return points;
+};
+
+/**
  * Sample points on the small circle whose points are `polarAngleDeg` away from
  * `axis` (90° gives a great circle). `axis` is assumed to be a unit vector.
  */

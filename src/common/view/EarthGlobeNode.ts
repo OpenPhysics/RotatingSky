@@ -8,7 +8,7 @@
  * only the near-side (front) grid lines are drawn over it.
  */
 
-import { Multilink, type TReadOnlyProperty } from "scenerystack/axon";
+import { Multilink, Property, type TReadOnlyProperty } from "scenerystack/axon";
 import { type Vector2, Vector3 } from "scenerystack/dot";
 import { Shape } from "scenerystack/kite";
 import { Circle, Node, Path } from "scenerystack/scenery";
@@ -23,6 +23,16 @@ const NCP = new Vector3(0, 0, 1);
 const GLOBE_SCALE = 0.28; // fraction of the celestial-sphere radius
 const GLOBE_LONGITUDES = [0, 45, 90, 135]; // half-meridians, spaced 45°
 
+export type EarthGlobeNodeOptions = {
+  /**
+   * Right ascension offset (hours) applied to the globe geography, modelling the
+   * precession of the equinoxes. 0 = J2000 epoch. A non-zero value rotates the
+   * coastlines and grid about the polar axis relative to the RA coordinate frame,
+   * showing how the equinox point drifts over millennia. Defaults to 0.
+   */
+  precessionAngleProperty?: TReadOnlyProperty<number>;
+};
+
 export class EarthGlobeNode extends Node {
   public constructor(
     projection: SkyProjection,
@@ -30,8 +40,11 @@ export class EarthGlobeNode extends Node {
     longitudeProperty: TReadOnlyProperty<number>,
     siderealTimeProperty: TReadOnlyProperty<number>,
     earthMapResolutionProperty: TReadOnlyProperty<EarthMapResolution>,
+    options?: EarthGlobeNodeOptions,
   ) {
     super();
+
+    const precessionAngleProperty = options?.precessionAngleProperty ?? new Property(0);
 
     const globeRadius = projection.radius * GLOBE_SCALE;
 
@@ -91,16 +104,18 @@ export class EarthGlobeNode extends Node {
         longitudeProperty,
         siderealTimeProperty,
         earthMapResolutionProperty,
+        precessionAngleProperty,
       ],
-      (_m, latitude, longitude, lst, resolution) => {
+      (_m, latitude, longitude, lst, resolution, precessionHours) => {
         disc.center = projection.center;
         applyGlobeClip();
 
         // The sidereal time is *local* to the observer, so the prime meridian sits at the
         // Greenwich sidereal time, GST = LST − longitude. Anchoring the geography to GST keeps
         // the observer's own city beneath the dot (which stays at RA = LST) rather than always
-        // drawing the 0° meridian under it.
-        const gst = lst - (longitude / 360) * HOURS_PER_DAY;
+        // drawing the 0° meridian under it. The precession angle shifts the geography in RA,
+        // modelling the slow westward drift of the equinox point.
+        const gst = lst - (longitude / 360) * HOURS_PER_DAY + precessionHours;
 
         const landShape = new Shape();
         for (const polygon of getEarthShorePolygons(resolution)) {
