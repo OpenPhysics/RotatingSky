@@ -15,15 +15,15 @@ export const FLAT_BUTTON_APPEARANCE_OPTIONS = {
 } as const;
 
 /** Text on flat push buttons and combo-box items (always on a light control surface). */
-export const LIGHT_SURFACE_TEXT_FILL = "#1a1a1a";
+export const LIGHT_SURFACE_TEXT_FILL = RotatingSkyColors.controlSurfaceTextColorProperty;
 
 /**
  * Combo-box chrome for panels. Item labels must use {@link LIGHT_SURFACE_TEXT_FILL}, not
  * {@link RotatingSkyColors.textColorProperty} — that color is for labels on the dark panel fill.
  */
 export const ROTATING_SKY_COMBO_BOX_OPTIONS = {
-  buttonFill: "white",
-  listFill: "white",
+  buttonFill: RotatingSkyColors.controlSurfaceColorProperty,
+  listFill: RotatingSkyColors.controlSurfaceColorProperty,
   buttonStroke: RotatingSkyColors.panelBorderColorProperty,
   listStroke: RotatingSkyColors.panelBorderColorProperty,
 } satisfies Pick<ComboBoxOptions, "buttonFill" | "listFill" | "buttonStroke" | "listStroke">;

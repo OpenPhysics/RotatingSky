@@ -56,14 +56,14 @@ export class EditableNumberFieldNode extends HBox {
     labelProperty.link(syncLabel);
 
     const fieldBackground = new Rectangle(0, 0, FIELD_WIDTH, FIELD_HEIGHT, {
-      fill: "#ffffff",
+      fill: RotatingSkyColors.controlSurfaceColorProperty,
       stroke: RotatingSkyColors.gridColorProperty,
       lineWidth: 1,
       cornerRadius: 2,
     });
     const valueText = new Text("—", {
       font: new PhetFont(CONTROL_FONT_SIZE),
-      fill: "#000000",
+      fill: RotatingSkyColors.controlSurfaceTextColorProperty,
     });
     const fieldNode = new Node({
       children: [fieldBackground, valueText],
@@ -111,7 +111,9 @@ export class EditableNumberFieldNode extends HBox {
 
   public setFieldEnabled(enabled: boolean): void {
     this.fieldActive = enabled;
-    this.fieldBackground.fill = enabled ? "#ffffff" : "#cccccc";
+    this.fieldBackground.fill = enabled
+      ? RotatingSkyColors.controlSurfaceColorProperty
+      : RotatingSkyColors.controlSurfaceDisabledColorProperty;
     this.fieldNode.cursor = enabled ? "text" : "default";
     if (!enabled) {
       this.editing = false;

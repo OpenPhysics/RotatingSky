@@ -17,6 +17,7 @@ import {
   FLAT_PLAY_PAUSE_STEP_BUTTON_OPTIONS,
   FLAT_RECTANGULAR_BUTTON_OPTIONS,
   FLAT_RESET_ALL_BUTTON_OPTIONS,
+  LIGHT_SURFACE_TEXT_FILL,
   TIME_CONTROL_SPEED_RADIO_OPTIONS,
 } from "../../common/RotatingSkyButtonOptions.js";
 import {
@@ -124,7 +125,7 @@ export class HorizonSystemScreenView extends ScreenView {
     ): RectangularPushButton =>
       new RectangularPushButton({
         ...FLAT_RECTANGULAR_BUTTON_OPTIONS,
-        content: new Text(labelProperty, { font: new PhetFont(CONTROL_FONT_SIZE), fill: "#000000" }),
+        content: new Text(labelProperty, { font: new PhetFont(CONTROL_FONT_SIZE), fill: LIGHT_SURFACE_TEXT_FILL }),
         listener,
         accessibleName: labelProperty,
       });
