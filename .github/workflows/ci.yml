@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, claude/simulations-github-build-yx3g8y]
+    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -24,10 +24,10 @@ permissions:
 
 jobs:
   ci:
-    uses: OpenPhysics/Baton/.github/workflows/ci.yml@claude/simulations-github-build-yx3g8y
+    uses: OpenPhysics/Baton/.github/workflows/ci.yml@main
 
   compliance:
-    uses: OpenPhysics/Baton/.github/workflows/shared-compliance-check.yml@claude/simulations-github-build-yx3g8y
+    uses: OpenPhysics/Baton/.github/workflows/shared-compliance-check.yml@main
 
   dependency-review:
     if: github.event_name == 'pull_request'
