@@ -13,12 +13,13 @@ import { VerticalAquaRadioButtonGroup } from "scenerystack/sun";
 import type { Tandem } from "scenerystack/tandem";
 import { FLAT_RECTANGULAR_BUTTON_OPTIONS } from "../common/RotatingSkyButtonOptions.js";
 import { StringManager } from "../i18n/StringManager.js";
+import RotatingSkyColors from "../RotatingSkyColors.js";
 import { type EarthMapResolution, LATITUDE_RANGE, LONGITUDE_RANGE } from "../RotatingSkyConstants.js";
 import RotatingSkyNamespace from "../RotatingSkyNamespace.js";
 import type { RotatingSkyPreferencesModel } from "./RotatingSkyPreferencesModel.js";
 
 /** Preferences dialog content sits on a light background regardless of color profile. */
-const PREFERENCES_TEXT_FILL = "#1a1a1a";
+const PREFERENCES_TEXT_FILL = RotatingSkyColors.controlSurfaceTextColorProperty;
 
 export class RotatingSkyPreferencesNode extends VBox {
   public constructor(preferencesModel: RotatingSkyPreferencesModel, tandem?: Tandem) {

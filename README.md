@@ -4,19 +4,13 @@ An interactive astronomy simulation about how the sky appears to rotate for an
 observer on Earth, built with [SceneryStack](https://scenerystack.org/),
 Vite 8, TypeScript 6, and Biome 2.
 
-## Screens
-
-1. **Horizon System** (`src/horizon-system/`) — the local sky from an observer's horizon.
-2. **Celestial Sphere** (`src/celestial-sphere/`) — the celestial sphere, its equator, ecliptic, and poles.
-3. **Explorer** (`src/explorer/`) — the combined, interactive rotating-sky explorer.
-
-Each screen is currently a scaffold (placeholder play area + Reset All) ready to
-be filled in. See `doc/multi-screen.md` for the multi-screen architecture and how
-to add a shared root model if the screens should share state.
-
 ## Features
 
-- Three-screen SceneryStack sim with model/view separation per screen
+- Three screens (see `doc/multi-screen.md` for the architecture):
+  1. **Horizon System** (`src/horizon-system/`) — the local sky from an observer's horizon.
+  2. **Celestial Sphere** (`src/celestial-sphere/`) — the celestial sphere, its equator, ecliptic, and poles.
+  3. **Explorer** (`src/explorer/`) — the combined, interactive rotating-sky explorer.
+- Model/view separation per screen
 - English, Spanish, and French localization via `StringManager`
 - Default and projector color profiles
 - Programmatic, locale-aware home-screen / navigation-bar icons

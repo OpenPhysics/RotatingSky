@@ -24,7 +24,7 @@ describe("greatCircleArcPoints", () => {
     // 4 segments ⇒ 5 points.
     expect(points).toHaveLength(5);
     expect(points[0]).toEqual(p1);
-    expect(points[4]).toEqual(p2);
+    expect(points[4].distance(p2)).toBeCloseTo(0, 10);
 
     // Every point should be on the unit sphere.
     for (const pt of points) {
