@@ -24,10 +24,10 @@ permissions:
 
 jobs:
   ci:
-    uses: OpenPhysics/Baton/.github/workflows/ci.yml@main
+    uses: OpenPhysics/Baton/.github/workflows/ci.yml@claude/simulations-github-build-yx3g8y
 
   compliance:
-    uses: OpenPhysics/Baton/.github/workflows/shared-compliance-check.yml@main
+    uses: OpenPhysics/Baton/.github/workflows/shared-compliance-check.yml@claude/simulations-github-build-yx3g8y
 
   dependency-review:
     if: github.event_name == 'pull_request'
