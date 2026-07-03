@@ -18,6 +18,8 @@ Vite 8, TypeScript 6, and Biome 2.
 - Git hooks for Biome pre-commit checks
 - Shared GitHub Actions CI via `OpenPhysics/Baton`
 
+See `doc/multi-screen.md` for the multi-screen architecture and how to share state across screens.
+
 ## Quick Start
 
 ```bash
@@ -37,6 +39,7 @@ npm start        # dev server → http://localhost:5173
 | `npm run lint` | Biome lint check |
 | `npm run format` | Auto-format all files |
 | `npm run fix` | Lint + auto-fix |
+| `npm test` | Run Vitest unit tests |
 | `npm run icons` | Regenerate PNG icons from `public/icons/icon.svg` |
 | `npm run clean` | Remove `dist/` |
 

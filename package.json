@@ -30,7 +30,7 @@
     "format": "biome format --write .",
     "fix": "biome check --write .",
     "check": "tsc --noEmit && tsc -p tsconfig.scripts.json --noEmit",
-    "release": "npm run check && npm run lint && npm run build && npm version patch && git push && git push --tags",
+    "release": "npm run check && npm run lint && npm run test && npm run build && npm version patch && git push && git push --tags",
     "watch": "tsc --watch",
     "test": "vitest run",
     "test:watch": "vitest",
