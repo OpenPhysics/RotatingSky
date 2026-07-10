@@ -16,7 +16,7 @@ import { PhetFont } from "scenerystack/scenery-phet";
 import RotatingSkyColors from "../../RotatingSkyColors.js";
 import { altAzToVector3 } from "../SkyCoordinates.js";
 import type { SkyProjection } from "../SkyProjection.js";
-import { addSplitPolyline, smallCirclePoints } from "./skyGraphics.js";
+import { addSplitSmoothPolyline, smallCirclePoints } from "./skyGraphics.js";
 
 const ZENITH = new Vector3(0, 0, 1);
 const NADIR = new Vector3(0, 0, -1);
@@ -139,10 +139,10 @@ export class HorizonDomeNode extends Node {
       const frontGrid = new Shape();
       const backGrid = new Shape();
       for (const alt of altitudeRings) {
-        addSplitPolyline(projection, smallCirclePoints(ZENITH, 90 - alt), true, frontGrid, backGrid);
+        addSplitSmoothPolyline(projection, smallCirclePoints(ZENITH, 90 - alt), true, frontGrid, backGrid);
       }
       for (const az of AZIMUTH_LINES) {
-        addSplitPolyline(projection, azimuthLinePoints(az, azimuthFrom, 90), false, frontGrid, backGrid);
+        addSplitSmoothPolyline(projection, azimuthLinePoints(az, azimuthFrom, 90), false, frontGrid, backGrid);
       }
       gridFront.shape = frontGrid;
       gridBack.shape = backGrid;
@@ -151,7 +151,7 @@ export class HorizonDomeNode extends Node {
         const frontMeridian = new Shape();
         const backMeridian = new Shape();
         const meridianPoints = includeUnderside ? meridianFullPoints() : meridianUpperPoints();
-        addSplitPolyline(projection, meridianPoints, false, frontMeridian, backMeridian);
+        addSplitSmoothPolyline(projection, meridianPoints, false, frontMeridian, backMeridian);
         meridianFront.shape = frontMeridian;
         meridianBack.shape = backMeridian;
         meridian.visible = true;

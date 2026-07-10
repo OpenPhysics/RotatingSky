@@ -17,11 +17,34 @@ import type { EarthMapResolution } from "../../RotatingSkyConstants.js";
 import { HOURS_PER_DAY, raDecToVector3 } from "../SkyCoordinates.js";
 import type { SkyProjection } from "../SkyProjection.js";
 import { type EarthShorePoint, getEarthShorePolygons } from "./EarthShoreData.js";
-import { addFrontHemispherePolyline, addFrontHemisphereSphericalPolygon, smallCirclePoints } from "./skyGraphics.js";
+import {
+  addFrontHemisphereSmoothPolyline,
+  addFrontHemisphereSphericalPolygon,
+  smallCirclePoints,
+} from "./skyGraphics.js";
 
 const NCP = new Vector3(0, 0, 1);
 const GLOBE_SCALE = 0.28; // fraction of the celestial-sphere radius
-const GLOBE_LONGITUDES = [0, 45, 90, 135]; // half-meridians, spaced 45°
+
+// Graticule spacing. Meridians are great circles
+const GLOBE_LONGITUDES = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330]; // degrees, spaced 30°
+const GLOBE_LATITUDES = [-60, -30, 30, 60]; // degrees (equator drawn separately)
+// Angular step for sampling meridians/parallels; small enough that the projected
+// curve stays smooth after the quadratic smoothing pass.
+const GLOBE_CURVE_STEP_DEG = 5;
+
+/**
+ * Full great-circle meridian (pole-to-pole) at the given longitude, sampled at a
+ * fine declination step so the projected arc stays smooth. `raOffsetHours` shifts
+ * the meridian in RA (longitude-of-date), accounting for sidereal time.
+ */
+const meridianPoints = (raOffsetHours: number, longitudeDeg: number): Vector3[] => {
+  const points: Vector3[] = [];
+  for (let dec = -90; dec <= 90; dec += GLOBE_CURVE_STEP_DEG) {
+    points.push(raDecToVector3(raOffsetHours + (longitudeDeg / 360) * HOURS_PER_DAY, dec));
+  }
+  return points;
+};
 
 export type EarthGlobeNodeOptions = {
   /**
@@ -124,13 +147,19 @@ export class EarthGlobeNode extends Node {
         landPath.shape = landShape;
 
         const shape = new Shape();
-        addFrontHemispherePolyline(projection, smallCirclePoints(NCP, 90), shape, mapGlobePoint); // equator
+        // Equator (small circle 90° from the NCP).
+        addFrontHemisphereSmoothPolyline(projection, smallCirclePoints(NCP, 90), shape, mapGlobePoint);
+        // Parallels (constant-latitude small circles), evenly spaced either side
+        // of the equator.
+        for (const lat of GLOBE_LATITUDES) {
+          addFrontHemisphereSmoothPolyline(projection, smallCirclePoints(NCP, 90 - lat), shape, mapGlobePoint);
+        }
+        // Meridians (full great circles) at even longitude spacing. Because each
+        // is a complete great circle, the front-hemisphere clip always shows the
+        // near-side arc regardless of where the globe sits in its rotation, so
+        // coverage stays even as the coastlines turn.
         for (const lon of GLOBE_LONGITUDES) {
-          const points: Vector3[] = [];
-          for (let dec = -90; dec <= 90; dec += 7.5) {
-            points.push(raDecToVector3(gst + (lon / 360) * HOURS_PER_DAY, dec));
-          }
-          addFrontHemispherePolyline(projection, points, shape, mapGlobePoint);
+          addFrontHemisphereSmoothPolyline(projection, meridianPoints(gst, lon), shape, mapGlobePoint);
         }
         gridPath.shape = shape;
 

@@ -236,6 +236,163 @@ export const addFrontHemispherePolyline = (
 };
 
 /**
+ * Quadratic-Bézier smoothing of a run of projected points. Walks the points
+ * pairwise, drawing a curve from the previous anchor to the *midpoint* of each
+ * successive pair, using the shared vertex as the control. This is the
+ * Catmull-Rom-style "midpoint-through-sample" trick: the curve passes through the
+ * midpoints (not the original vertices) so it reads as one continuous, smooth
+ * curve, and it never overshoots past a sample on either side. A straight
+ * `lineTo` closes the gap between the last midpoint and the final point, so the
+ * path still ends exactly on the final sample.
+ *
+ * `penDown` (returned) is whether the path currently has an open subpath, so a
+ * caller that splits a curve into front/back runs can resume mid-curve.
+ */
+const smoothRun = (shape: Shape, points: Vector2[], penDown: boolean): boolean => {
+  const n = points.length;
+  if (n === 0) {
+    return penDown;
+  }
+  const first = points[0];
+  if (!first) {
+    return penDown;
+  }
+  let open = penDown;
+  if (!open) {
+    shape.moveToPoint(first);
+    open = true;
+  }
+  if (n < 3) {
+    for (let i = 1; i < n; i++) {
+      const point = points[i];
+      if (point) {
+        shape.lineToPoint(point);
+      }
+    }
+    return open;
+  }
+  // Midpoint of each adjacent pair becomes the curve endpoint; the vertex
+  // between them is the control point. The first/last segments are straight.
+  for (let i = 1; i < n - 1; i++) {
+    const control = points[i];
+    const next = points[i + 1];
+    if (control && next) {
+      shape.quadraticCurveToPoint(control, control.average(next));
+    }
+  }
+  // Anchor the final sample so the run terminates exactly where expected.
+  const last = points[n - 1];
+  if (last) {
+    shape.lineToPoint(last);
+  }
+  return open;
+};
+
+/**
+ * Draws a closed loop of points as a smooth quadratic-Bézier curve with no
+ * visible seam. The path starts (and, via {@link Shape.close}, ends) at the
+ * midpoint between the last and first samples, and each sample acts as a control
+ * point whose curve lands on the next midpoint. This is the closed-loop form of
+ * {@link smoothRun}, used for a fully-visible closed circle (e.g. a small circle
+ * near the near pole) so it reads as one continuous curve instead of an arc with
+ * a corner at the wrap-around.
+ */
+const smoothClosedRun = (shape: Shape, points: Vector2[]): void => {
+  const n = points.length;
+  const first = points[0];
+  const last = points[n - 1];
+  if (n < 3 || !first || !last) {
+    points.forEach((p, i) => {
+      if (i === 0) {
+        shape.moveToPoint(p);
+      } else {
+        shape.lineToPoint(p);
+      }
+    });
+    if (n >= 2) {
+      shape.close();
+    }
+    return;
+  }
+  shape.moveToPoint(last.average(first));
+  for (let i = 0; i < n; i++) {
+    const control = points[i];
+    const next = points[(i + 1) % n];
+    if (control && next) {
+      shape.quadraticCurveToPoint(control, control.average(next));
+    }
+  }
+  shape.close();
+};
+
+/**
+ * Like {@link addFrontHemispherePolyline} but draws each front-hemisphere run as a
+ * smooth quadratic-Bézier curve (via {@link smoothRun}) instead of polyline
+ * chords. Each segment is still clipped independently at the view horizon before
+ * smoothing, so chords never cut across the sphere interior. Sampling the source
+ * curve at a fixed angular step and projecting then smoothing yields a faithful,
+ * continuous rendering of the projected great/small circle.
+ */
+export const addFrontHemisphereSmoothPolyline = (
+  projection: SkyProjection,
+  points: Vector3[],
+  shape: Shape,
+  mapPoint: (point: Vector3) => Vector2,
+): void => {
+  if (points.length === 0) {
+    return;
+  }
+
+  // Accumulate projected samples belonging to the current front run; when the
+  // run ends, flush it through smoothRun.
+  let run: Vector2[] = [];
+  let penDown = false;
+  const [first, ...rest] = points;
+  if (!first) {
+    return;
+  }
+  let previous = first;
+  let previousDepth = worldDepth(projection, previous);
+
+  const flush = (): void => {
+    if (run.length > 0) {
+      penDown = smoothRun(shape, run, penDown);
+      run = [];
+    }
+  };
+
+  for (const point of rest) {
+    const depth = worldDepth(projection, point);
+    const previousFront = previousDepth >= 0;
+    const front = depth >= 0;
+
+    if (previousFront && front) {
+      if (run.length === 0) {
+        run.push(mapPoint(previous));
+      }
+      run.push(mapPoint(point));
+    } else if (previousFront && !front) {
+      if (run.length === 0) {
+        run.push(mapPoint(previous));
+      }
+      run.push(mapPoint(clipAtHorizon(previous, point, previousDepth, depth)));
+      flush();
+      penDown = false;
+    } else if (!previousFront && front) {
+      run.push(mapPoint(clipAtHorizon(previous, point, previousDepth, depth)));
+      run.push(mapPoint(point));
+    } else {
+      run = [];
+      penDown = false;
+    }
+
+    previous = point;
+    previousDepth = depth;
+  }
+  flush();
+};
+
+/**
  * Appends a projected polyline to the given `front` / `back` shapes, routing each
  * segment by its camera-space depth (≥ 0 ⇒ front hemisphere). Lets callers merge
  * many polylines into a single pair of shapes.
@@ -279,6 +436,89 @@ export const projectSplitPolylines = (
   for (const points of polylines) {
     addSplitPolyline(projection, points, closed, front, back);
   }
+  return { front, back };
+};
+
+/**
+ * Smooth counterpart of {@link addSplitPolyline}. Routes each consecutive pair
+ * of samples to the `front` or `back` shape by its mid-depth (≥ 0 ⇒ front), then
+ * draws each accumulated run as a smooth quadratic-Bézier curve. A `closed`
+ * curve whose samples all share one hemisphere is rendered with
+ * {@link smoothClosedRun} (no seam); everything else uses {@link smoothRun}, so a
+ * single great/small circle crossing the horizon twice smooths into a clean
+ * near-side arc plus a clean far-side arc.
+ */
+export const addSplitSmoothPolyline = (
+  projection: SkyProjection,
+  points: Vector3[],
+  closed: boolean,
+  front: Shape,
+  back: Shape,
+): void => {
+  const projected = points.map((p) => projection.projectWithDepth(p));
+  const count = closed ? projected.length : projected.length - 1;
+  if (count < 1) {
+    return;
+  }
+
+  // Decide per-sample visibility from the midpoint of each leading segment; a
+  // sample is "front" when the segment *into* it (from its predecessor) sits at
+  // mid-depth ≥ 0. This matches addSplitPolyline's routing at segment midpoints.
+  const isFront = new Array<boolean>(projected.length);
+  for (let i = 0; i < projected.length; i++) {
+    const a = projected[closed ? (i - 1 + projected.length) % projected.length : Math.max(0, i - 1)];
+    const b = projected[i];
+    isFront[i] = a && b ? (a.depth + b.depth) / 2 >= 0 : a ? a.depth >= 0 : true;
+  }
+
+  const allSameHemisphere = isFront.every((f) => f === isFront[0]);
+  const allVisible = closed && allSameHemisphere && isFront[0] === true;
+  const allHidden = closed && allSameHemisphere && isFront[0] === false;
+
+  // Fully-visible (or fully-hidden) closed loop: one seamless smooth loop.
+  if (allVisible || allHidden) {
+    const target = allVisible ? front : back;
+    const pts = projected.map((p) => p.point);
+    smoothClosedRun(target, pts);
+    return;
+  }
+
+  // Otherwise split into front/back runs and smooth each with smoothRun.
+  let run: Vector2[] = [];
+  let runTarget: Shape | null = null;
+
+  const flush = (): void => {
+    if (run.length > 0 && runTarget) {
+      smoothRun(runTarget, run, false);
+    }
+    run = [];
+    runTarget = null;
+  };
+
+  for (let i = 0; i < projected.length; i++) {
+    const item = projected[i];
+    if (!item) {
+      continue;
+    }
+    const target = isFront[i] ? front : back;
+    if (runTarget !== target) {
+      flush();
+      runTarget = target;
+    }
+    run.push(item.point);
+  }
+  flush();
+};
+
+/** Smooth counterpart of {@link projectSplitPolyline}: one polyline → front/back shapes. */
+export const projectSplitSmoothPolyline = (
+  projection: SkyProjection,
+  points: Vector3[],
+  closed = true,
+): SplitShapes => {
+  const front = new Shape();
+  const back = new Shape();
+  addSplitSmoothPolyline(projection, points, closed, front, back);
   return { front, back };
 };
 

@@ -19,7 +19,7 @@ import { PhetFont } from "scenerystack/scenery-phet";
 import RotatingSkyColors from "../../RotatingSkyColors.js";
 import { raDecToVector3 } from "../SkyCoordinates.js";
 import type { SkyProjection } from "../SkyProjection.js";
-import { addSplitPolyline, projectSplitPolyline, smallCirclePoints } from "./skyGraphics.js";
+import { addSplitSmoothPolyline, projectSplitSmoothPolyline, smallCirclePoints } from "./skyGraphics.js";
 
 export type CelestialSphereNodeOptions = {
   /** Toggles the N/E/S/W and NCP/SCP labels. Defaults to always visible. */
@@ -120,23 +120,23 @@ export class CelestialSphereNode extends Node {
       const gridFrontShape = new Shape();
       const gridBackShape = new Shape();
       for (const dec of DEC_CIRCLES) {
-        addSplitPolyline(projection, smallCirclePoints(NCP, 90 - dec), true, gridFrontShape, gridBackShape);
+        addSplitSmoothPolyline(projection, smallCirclePoints(NCP, 90 - dec), true, gridFrontShape, gridBackShape);
       }
       for (const ra of RA_MERIDIANS) {
-        addSplitPolyline(projection, meridianPoints(ra), false, gridFrontShape, gridBackShape);
+        addSplitSmoothPolyline(projection, meridianPoints(ra), false, gridFrontShape, gridBackShape);
       }
       gridFront.shape = gridFrontShape;
       gridBack.shape = gridBackShape;
 
-      const equator = projectSplitPolyline(projection, smallCirclePoints(NCP, 90), true);
+      const equator = projectSplitSmoothPolyline(projection, smallCirclePoints(NCP, 90), true);
       equatorFront.shape = equator.front;
       equatorBack.shape = equator.back;
 
-      const ecliptic = projectSplitPolyline(projection, smallCirclePoints(ECLIPTIC_POLE, 90), true);
+      const ecliptic = projectSplitSmoothPolyline(projection, smallCirclePoints(ECLIPTIC_POLE, 90), true);
       eclipticFront.shape = ecliptic.front;
       eclipticBack.shape = ecliptic.back;
 
-      const hourCircleSplit = projectSplitPolyline(projection, smallCirclePoints(HOUR_CIRCLE_POLE, 90), true);
+      const hourCircleSplit = projectSplitSmoothPolyline(projection, smallCirclePoints(HOUR_CIRCLE_POLE, 90), true);
       hourCircleFront.shape = hourCircleSplit.front;
       hourCircleBack.shape = hourCircleSplit.back;
       placeLabel(hourCircleLabel, RA_ZERO);
