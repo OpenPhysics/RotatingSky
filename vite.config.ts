@@ -154,8 +154,9 @@ export default defineConfig(({ mode }) => {
             manifest: {
               name: "Rotating Sky",
               // biome-ignore lint/style/useNamingConvention: Web App Manifest spec requires snake_case keys
-              short_name: "SimTemplate",
-              description: "A single-screen SceneryStack simulation template",
+              short_name: "Rotating Sky",
+              description:
+                "A SceneryStack simulation exploring the rotating sky: a Horizon System, a Celestial Sphere, and an interactive Explorer.",
               // biome-ignore lint/style/useNamingConvention: Web App Manifest spec requires snake_case keys
               theme_color: "#1a1a2e",
               // biome-ignore lint/style/useNamingConvention: Web App Manifest spec requires snake_case keys
