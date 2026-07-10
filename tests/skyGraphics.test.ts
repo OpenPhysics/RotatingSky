@@ -4,9 +4,10 @@
  * Unit tests for the great-circle arc geometry helper.
  */
 
-import { Vector3 } from "scenerystack/dot";
+import { Vector2, Vector3 } from "scenerystack/dot";
 import { describe, expect, it } from "vitest";
-import { greatCircleArcPoints } from "../src/common/view/skyGraphics.js";
+import { SkyProjection } from "../src/common/SkyProjection.js";
+import { greatCircleArcPoints, projectSplitSmoothPolyline, smallCirclePoints } from "../src/common/view/skyGraphics.js";
 
 describe("greatCircleArcPoints", () => {
   it("returns both endpoints for coincident points", () => {
@@ -61,5 +62,42 @@ describe("greatCircleArcPoints", () => {
       // Every point should lie in the plane: dot with normal ≈ 0.
       expect(Math.abs(pt.dot(normal))).toBeLessThan(1e-9);
     }
+  });
+});
+
+describe("closed-loop seam handling (smooth split)", () => {
+  const NCP = new Vector3(0, 0, 1);
+
+  // kite's Shape.close() leaves a trailing empty subpath (one point, no
+  // segments) — a Canvas2D-style quirk that draws nothing. Filter it out when
+  // asserting on what's actually rendered.
+  const drawnSubpaths = (shape: { subpaths: { segments: unknown[] }[] }) =>
+    shape.subpaths.filter((s) => s.segments.length > 0);
+
+  it("draws a fully-visible closed ring as one closed subpath (no seam gap)", () => {
+    // Identity view: depth = world y. A small ring about the +Y axis (the view
+    // direction) lies entirely within 30° of the camera, so every sample has
+    // depth ≥ 0.866 — the whole ring is on the near side.
+    const projection = new SkyProjection({ center: new Vector2(0, 0), radius: 100 });
+    const ring = smallCirclePoints(new Vector3(0, 1, 0), 30, 12);
+    const { front, back } = projectSplitSmoothPolyline(projection, ring, true);
+
+    expect(drawnSubpaths(back)).toHaveLength(0);
+    expect(drawnSubpaths(front)).toHaveLength(1);
+    expect(front.subpaths[0]?.closed).toBe(true);
+  });
+
+  it("keeps the front arc whole when the array seam crosses it", () => {
+    // Azimuth π/2 makes depth = world x. The equator's near side is then the arc
+    // of +x (θ ∈ (−90°, 90°)), which wraps past sample index 0 — i.e. the array
+    // seam (between the last and first sample) falls inside the front arc. Without
+    // rotating the seam into the hidden arc, the visible arc would split into two
+    // unconnected runs with a gap between them.
+    const projection = new SkyProjection({ center: new Vector2(0, 0), radius: 100, azimuth: Math.PI / 2 });
+    const ring = smallCirclePoints(NCP, 90, 8);
+    const { front } = projectSplitSmoothPolyline(projection, ring, true);
+
+    // One contiguous front subpath, not two with a gap.
+    expect(drawnSubpaths(front)).toHaveLength(1);
   });
 });

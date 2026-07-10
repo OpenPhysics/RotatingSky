@@ -10,7 +10,7 @@
 import { Vector2, Vector3 } from "scenerystack/dot";
 import { Shape } from "scenerystack/kite";
 import { degToRad } from "../SkyCoordinates.js";
-import type { SkyProjection } from "../SkyProjection.js";
+import type { ProjectedPoint, SkyProjection } from "../SkyProjection.js";
 
 /** Number of samples used to approximate a full circle. */
 export const CIRCLE_SAMPLES = 96;
@@ -326,14 +326,13 @@ const smoothClosedRun = (shape: Shape, points: Vector2[]): void => {
 };
 
 /**
- * Like {@link addFrontHemispherePolyline} but draws each front-hemisphere run as a
- * smooth quadratic-Bézier curve (via {@link smoothRun}) instead of polyline
- * chords. Each segment is still clipped independently at the view horizon before
- * smoothing, so chords never cut across the sphere interior. Sampling the source
- * curve at a fixed angular step and projecting then smoothing yields a faithful,
- * continuous rendering of the projected great/small circle.
+ * Walks an *open* point list and appends only its front-hemisphere runs as smooth
+ * quadratic-Bézier curves, clipping each segment at the view horizon. This is the
+ * shared linear sweep used by {@link addFrontHemisphereSmoothPolyline} for both
+ * open curves and closed curves (after the caller rotates a closed ring so its
+ * seam falls inside the hidden arc — see that function).
  */
-export const addFrontHemisphereSmoothPolyline = (
+const appendFrontRuns = (
   projection: SkyProjection,
   points: Vector3[],
   shape: Shape,
@@ -393,6 +392,67 @@ export const addFrontHemisphereSmoothPolyline = (
 };
 
 /**
+ * Like {@link addFrontHemispherePolyline} but draws each front-hemisphere run as a
+ * smooth quadratic-Bézier curve (via {@link smoothRun}) instead of polyline
+ * chords. Each segment is still clipped independently at the view horizon before
+ * smoothing, so chords never cut across the sphere interior. Sampling the source
+ * curve at a fixed angular step and projecting then smoothing yields a faithful,
+ * continuous rendering of the projected great/small circle.
+ *
+ * For `closed` curves (the default for small circles such as the equator and
+ * latitude parallels) the seam between the last and first sample is handled: a
+ * loop wholly on the near side is drawn as one seamless closed curve, and a loop
+ * crossing the horizon is rotated so the array seam falls inside the hidden arc,
+ * keeping the single visible arc contiguous (otherwise it would be split into two
+ * unconnected pieces with a gap between them).
+ */
+export const addFrontHemisphereSmoothPolyline = (
+  projection: SkyProjection,
+  points: Vector3[],
+  shape: Shape,
+  mapPoint: (point: Vector3) => Vector2,
+  closed = false,
+): void => {
+  const n = points.length;
+  if (n === 0) {
+    return;
+  }
+
+  if (closed && n >= 3) {
+    const depths = points.map((p) => worldDepth(projection, p));
+    const anyBack = depths.some((d) => d < 0);
+    const anyFront = depths.some((d) => d >= 0);
+    if (!anyBack) {
+      // Entirely on the near side: one seamless closed loop.
+      smoothClosedRun(shape, points.map(mapPoint));
+      return;
+    }
+    if (!anyFront) {
+      return; // entirely on the far side: nothing visible
+    }
+    // Mixed: a plane cuts a sphere circle in at most two points, so there is
+    // exactly one front arc. Rotate the ring to start inside the back arc and
+    // append the start sample once more so the linear sweep covers the seam
+    // edge; this keeps the front arc whole instead of split across the seam.
+    let backStart = 0;
+    for (let i = 0; i < n; i++) {
+      if ((depths[i] ?? 0) < 0) {
+        backStart = i;
+        break;
+      }
+    }
+    const start = points[backStart];
+    if (start) {
+      const ring = [...points.slice(backStart), ...points.slice(0, backStart), start];
+      appendFrontRuns(projection, ring, shape, mapPoint);
+    }
+    return;
+  }
+
+  appendFrontRuns(projection, points, shape, mapPoint);
+};
+
+/**
  * Appends a projected polyline to the given `front` / `back` shapes, routing each
  * segment by its camera-space depth (≥ 0 ⇒ front hemisphere). Lets callers merge
  * many polylines into a single pair of shapes.
@@ -440,6 +500,78 @@ export const projectSplitPolylines = (
 };
 
 /**
+ * Per-sample front/back flags from the mid-depth of each leading segment, mirroring
+ * {@link addSplitPolyline}'s midpoint routing.
+ */
+const computeVisibility = (projected: ProjectedPoint[], closed: boolean): boolean[] =>
+  projected.map((b, i) => {
+    const a = projected[closed ? (i - 1 + projected.length) % projected.length : Math.max(0, i - 1)];
+    return a ? (a.depth + b.depth) / 2 >= 0 : true;
+  });
+
+/**
+ * Rotates a closed ring so the array seam falls inside the hidden (back) arc
+ * rather than the visible front arc, then duplicates the start sample so the
+ * linear sweep covers the closing edge. A plane cuts a sphere circle in at most
+ * two points, so there is exactly one front arc and one back arc; putting the
+ * seam in the back arc keeps the visible arc whole instead of split into two
+ * unconnected runs with a gap. Returns the rotated sample/flag arrays (or the
+ * originals unchanged when `closed` is false).
+ */
+const rotateSeamIntoBackArc = (
+  projected: ProjectedPoint[],
+  isFront: boolean[],
+  closed: boolean,
+): { ordered: ProjectedPoint[]; orderedFront: boolean[] } => {
+  if (!closed) {
+    return { ordered: projected, orderedFront: isFront };
+  }
+  let backStart = 0;
+  for (let i = 0; i < isFront.length; i++) {
+    if (!isFront[i]) {
+      backStart = i;
+      break;
+    }
+  }
+  const startItem = projected[backStart];
+  if (!startItem) {
+    return { ordered: projected, orderedFront: isFront };
+  }
+  return {
+    ordered: [...projected.slice(backStart), ...projected.slice(0, backStart), startItem],
+    orderedFront: [...isFront.slice(backStart), ...isFront.slice(0, backStart), isFront[backStart] ?? false],
+  };
+};
+
+/** Walks samples and routes each into a `front`/`back` run, smoothing on flush. */
+const sweepSplitRuns = (ordered: ProjectedPoint[], orderedFront: boolean[], front: Shape, back: Shape): void => {
+  let run: Vector2[] = [];
+  let runTarget: Shape | null = null;
+
+  const flush = (): void => {
+    if (run.length > 0 && runTarget) {
+      smoothRun(runTarget, run, false);
+    }
+    run = [];
+    runTarget = null;
+  };
+
+  for (let i = 0; i < ordered.length; i++) {
+    const item = ordered[i];
+    if (!item) {
+      continue;
+    }
+    const target = orderedFront[i] ? front : back;
+    if (runTarget !== target) {
+      flush();
+      runTarget = target;
+    }
+    run.push(item.point);
+  }
+  flush();
+};
+
+/**
  * Smooth counterpart of {@link addSplitPolyline}. Routes each consecutive pair
  * of samples to the `front` or `back` shape by its mid-depth (≥ 0 ⇒ front), then
  * draws each accumulated run as a smooth quadratic-Bézier curve. A `closed`
@@ -461,53 +593,21 @@ export const addSplitSmoothPolyline = (
     return;
   }
 
-  // Decide per-sample visibility from the midpoint of each leading segment; a
-  // sample is "front" when the segment *into* it (from its predecessor) sits at
-  // mid-depth ≥ 0. This matches addSplitPolyline's routing at segment midpoints.
-  const isFront = new Array<boolean>(projected.length);
-  for (let i = 0; i < projected.length; i++) {
-    const a = projected[closed ? (i - 1 + projected.length) % projected.length : Math.max(0, i - 1)];
-    const b = projected[i];
-    isFront[i] = a && b ? (a.depth + b.depth) / 2 >= 0 : a ? a.depth >= 0 : true;
-  }
-
-  const allSameHemisphere = isFront.every((f) => f === isFront[0]);
-  const allVisible = closed && allSameHemisphere && isFront[0] === true;
-  const allHidden = closed && allSameHemisphere && isFront[0] === false;
+  const isFront = computeVisibility(projected, closed);
+  const allVisible = closed && isFront.every((f) => f);
+  const allHidden = closed && isFront.every((f) => !f);
 
   // Fully-visible (or fully-hidden) closed loop: one seamless smooth loop.
   if (allVisible || allHidden) {
-    const target = allVisible ? front : back;
-    const pts = projected.map((p) => p.point);
-    smoothClosedRun(target, pts);
+    smoothClosedRun(
+      allVisible ? front : back,
+      projected.map((p) => p.point),
+    );
     return;
   }
 
-  // Otherwise split into front/back runs and smooth each with smoothRun.
-  let run: Vector2[] = [];
-  let runTarget: Shape | null = null;
-
-  const flush = (): void => {
-    if (run.length > 0 && runTarget) {
-      smoothRun(runTarget, run, false);
-    }
-    run = [];
-    runTarget = null;
-  };
-
-  for (let i = 0; i < projected.length; i++) {
-    const item = projected[i];
-    if (!item) {
-      continue;
-    }
-    const target = isFront[i] ? front : back;
-    if (runTarget !== target) {
-      flush();
-      runTarget = target;
-    }
-    run.push(item.point);
-  }
-  flush();
+  const { ordered, orderedFront } = rotateSeamIntoBackArc(projected, isFront, closed);
+  sweepSplitRuns(ordered, orderedFront, front, back);
 };
 
 /** Smooth counterpart of {@link projectSplitPolyline}: one polyline → front/back shapes. */

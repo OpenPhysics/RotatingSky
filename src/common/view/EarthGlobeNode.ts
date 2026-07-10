@@ -147,12 +147,12 @@ export class EarthGlobeNode extends Node {
         landPath.shape = landShape;
 
         const shape = new Shape();
-        // Equator (small circle 90° from the NCP).
-        addFrontHemisphereSmoothPolyline(projection, smallCirclePoints(NCP, 90), shape, mapGlobePoint);
+        // Equator (small circle 90° from the NCP), a closed ring.
+        addFrontHemisphereSmoothPolyline(projection, smallCirclePoints(NCP, 90), shape, mapGlobePoint, true);
         // Parallels (constant-latitude small circles), evenly spaced either side
-        // of the equator.
+        // of the equator; each is a closed ring.
         for (const lat of GLOBE_LATITUDES) {
-          addFrontHemisphereSmoothPolyline(projection, smallCirclePoints(NCP, 90 - lat), shape, mapGlobePoint);
+          addFrontHemisphereSmoothPolyline(projection, smallCirclePoints(NCP, 90 - lat), shape, mapGlobePoint, true);
         }
         // Meridians (full great circles) at even longitude spacing. Because each
         // is a complete great circle, the front-hemisphere clip always shows the
