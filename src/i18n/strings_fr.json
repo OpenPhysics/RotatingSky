@@ -59,6 +59,17 @@
     "guideStarPosition": "Étoile guide à ascension droite {{ra}} heures, déclinaison {{dec}} degrés",
     "guideStarHelp": "Utilisez les flèches pour déplacer l'étoile, ou faites-la glisser avec la souris.",
     "showEquatorHorizonAngle": "Afficher l'angle entre l'équateur céleste et l'horizon",
+    "showNcpAltitudeAngle": "Afficher l'altitude du pôle céleste",
+    "viewMode": "Vue",
+    "viewModeDiagram": "Diagramme de l'horizon",
+    "viewModeSky": "Vue du ciel",
+    "viewModeBoth": "Les deux vues",
+    "viewDirection": "Direction de vue",
+    "viewDirectionNorth": "Nord",
+    "viewDirectionEast": "Est",
+    "viewDirectionSouth": "Sud",
+    "viewDirectionWest": "Ouest",
+    "snapDomeToDirection": "Aligner le diagramme sur la direction de vue",
     "starControls": "Commandes des étoiles",
     "starPatterns": "Motifs d'étoiles…",
     "noStarTrails": "Aucune traînée",
@@ -76,7 +87,7 @@
     "horizonSystem": {
       "screenSummary": {
         "playArea": "La zone de jeu montre le ciel local depuis l'horizon d'un observateur, avec les points cardinaux et le Soleil et les étoiles qui se lèvent et se couchent à mesure que le ciel tourne.",
-        "controlArea": "La zone de contrôle permet de régler la latitude, d'ajouter des étoiles, d'animer le temps, d'afficher ou de masquer les traînées d'étoiles et les bandes de déclinaison, de supprimer toutes les étoiles et de réinitialiser la simulation.",
+        "controlArea": "La zone de contrôle permet de régler la latitude, de choisir le diagramme de l'horizon ou la vue du ciel, de regarder vers le nord l'est le sud ou l'ouest, d'ajouter des étoiles, d'animer le temps, d'afficher ou de masquer les traînées, les régions de déclinaison, les angles, le contenu sous l'horizon, les étiquettes, le méridien et les références des pôles célestes, de supprimer toutes les étoiles et de réinitialiser la simulation.",
         "interactionHint": "Explorez l'aspect du ciel depuis votre position au-dessus de l'horizon."
       },
       "currentDetails": "L'observateur est à une latitude de {{latitude}} degrés. Étoiles affichées : {{starCount}}. Le temps sidéral local est de {{time}} heures."

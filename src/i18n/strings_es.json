@@ -59,6 +59,17 @@
     "guideStarPosition": "Estrella guía en ascensión recta {{ra}} horas, declinación {{dec}} grados",
     "guideStarHelp": "Usa las flechas para mover la estrella, o arrástrala con el ratón.",
     "showEquatorHorizonAngle": "Mostrar el ángulo entre el ecuador celeste y el horizonte",
+    "showNcpAltitudeAngle": "Mostrar la altitud del polo celeste",
+    "viewMode": "Vista",
+    "viewModeDiagram": "Diagrama del horizonte",
+    "viewModeSky": "Vista del cielo",
+    "viewModeBoth": "Ambas vistas",
+    "viewDirection": "Dirección de la vista",
+    "viewDirectionNorth": "Norte",
+    "viewDirectionEast": "Este",
+    "viewDirectionSouth": "Sur",
+    "viewDirectionWest": "Oeste",
+    "snapDomeToDirection": "Ajustar el diagrama a la dirección de la vista",
     "starControls": "Controles de estrellas",
     "starPatterns": "Patrones de estrellas…",
     "noStarTrails": "Sin trazas",
@@ -76,7 +87,7 @@
     "horizonSystem": {
       "screenSummary": {
         "playArea": "El área de juego muestra el cielo local desde el horizonte de un observador, con los puntos cardinales y el Sol y las estrellas saliendo y poniéndose a medida que el cielo gira.",
-        "controlArea": "El área de control permite ajustar la latitud, agregar estrellas, animar el tiempo, mostrar u ocultar los rastros de estrellas y las bandas de declinación, eliminar todas las estrellas y reiniciar la simulación.",
+        "controlArea": "El área de control permite ajustar la latitud, elegir el diagrama del horizonte o la vista del cielo, mirar al norte este sur u oeste, agregar estrellas, animar el tiempo, mostrar u ocultar trazas, regiones de declinación, ángulos, el contenido bajo el horizonte, etiquetas, el meridiano y las referencias de los polos celestes, eliminar todas las estrellas y reiniciar la simulación.",
         "interactionHint": "Explora cómo se ve el cielo desde tu ubicación sobre el horizonte."
       },
       "currentDetails": "El observador está a una latitud de {{latitude}} grados. Estrellas mostradas: {{starCount}}. El tiempo sidéreo local es de {{time}} horas."

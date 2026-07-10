@@ -133,6 +133,15 @@ const RotatingSkyColors = {
     projector: "#66bb6a",
   }),
 
+  /**
+   * Night-sky fill for the first-person sky view panel. Distinct from the screen
+   * background so the FOV reads as a separate viewport.
+   */
+  skyViewBackgroundColorProperty: new ProfileColorProperty(RotatingSkyNamespace, "skyViewBackground", {
+    default: "#050510",
+    projector: "#e8f0ff",
+  }),
+
   /** Cardinal-direction and pole labels (N, E, S, W, NCP, …). */
   cardinalLabelColorProperty: new ProfileColorProperty(RotatingSkyNamespace, "cardinalLabel", {
     default: "#ffffff",

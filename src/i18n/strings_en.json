@@ -59,6 +59,17 @@
     "guideStarPosition": "Guide star at right ascension {{ra}} hours, declination {{dec}} degrees",
     "guideStarHelp": "Use the arrow keys to move the star, or drag it with the mouse.",
     "showEquatorHorizonAngle": "Show angle between celestial equator and horizon",
+    "showNcpAltitudeAngle": "Show altitude of celestial pole",
+    "viewMode": "View",
+    "viewModeDiagram": "Horizon diagram",
+    "viewModeSky": "Sky view",
+    "viewModeBoth": "Both views",
+    "viewDirection": "View direction",
+    "viewDirectionNorth": "North",
+    "viewDirectionEast": "East",
+    "viewDirectionSouth": "South",
+    "viewDirectionWest": "West",
+    "snapDomeToDirection": "Snap diagram to view direction",
     "starControls": "Star Controls",
     "starPatterns": "Star Patterns…",
     "noStarTrails": "No star trails",
@@ -76,7 +87,7 @@
     "horizonSystem": {
       "screenSummary": {
         "playArea": "The play area shows the local sky from an observer's horizon, with the cardinal directions and the Sun and stars rising and setting as the sky rotates.",
-        "controlArea": "The control area lets you set the latitude, add stars, animate time, show or hide star trails, the rise-and-set, circumpolar, and never-rise star regions, content below the horizon, zenith and nadir labels, the meridian, and celestial-pole references, remove all stars, and reset the simulation.",
+        "controlArea": "The control area lets you set the latitude, choose horizon diagram or sky view, face north east south or west, add stars, animate time, show or hide star trails, declination regions, angles, content below the horizon, labels, the meridian, and celestial-pole references, remove all stars, and reset the simulation.",
         "interactionHint": "Explore how the sky looks from your location above the horizon."
       },
       "currentDetails": "The observer is at latitude {{latitude}} degrees. Stars shown: {{starCount}}. The local sidereal time is {{time}} hours."

@@ -163,6 +163,9 @@ export class SkyModel implements TModel {
   /** Show the angle between the celestial equator and the horizon (= 90° − |lat|). */
   public readonly equatorHorizonAngleVisibleProperty = new BooleanProperty(false);
 
+  /** Show the altitude of the celestial pole (= |lat|) on the horizon meridian. */
+  public readonly ncpAltitudeAngleVisibleProperty = new BooleanProperty(false);
+
   // ── Celestial Sphere appearance toggles ──────────────────────────────────────
 
   /** Show the observer's horizon plane cutting through the celestial sphere. */
@@ -343,6 +346,7 @@ export class SkyModel implements TModel {
     this.riseSetRegionVisibleProperty.reset();
     this.neverRiseRegionVisibleProperty.reset();
     this.equatorHorizonAngleVisibleProperty.reset();
+    this.ncpAltitudeAngleVisibleProperty.reset();
     this.horizonPlaneVisibleProperty.reset();
     this.gridVisibleProperty.reset();
     this.outlineVisibleProperty.reset();

@@ -62,6 +62,12 @@ export const SLIDER_THUMB_SIZE = new Dimension2(13, 26);
 /** Default screen-space radius of a projected sky sphere / dome. */
 export const SPHERE_RADIUS = 170;
 
+/**
+ * Max side length (px) of the first-person sky-view FOV panel. Kept near the
+ * dome diameter so Sky view and Horizon diagram read at a similar visual scale.
+ */
+export const SKY_VIEW_MAX_SIZE = SPHERE_RADIUS * 2;
+
 /** Vertical gap between a sky sphere and the coordinate readout beneath it. */
 export const VIEW_READOUT_GAP = 10;
 
@@ -134,6 +140,7 @@ RotatingSkyNamespace.register("RotatingSkyConstants", {
   NUMBER_CONTROL_SLIDER_TRACK_SIZE,
   SLIDER_THUMB_SIZE,
   SPHERE_RADIUS,
+  SKY_VIEW_MAX_SIZE,
   VIEW_READOUT_GAP,
   DEFAULT_LATITUDE,
   DEFAULT_LONGITUDE,
