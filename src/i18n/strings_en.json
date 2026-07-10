@@ -20,6 +20,18 @@
     "viewSystem": "View",
     "celestialSphereView": "Celestial Sphere",
     "horizonView": "Horizon",
+    "switchToHorizon": "Switch to Horizon",
+    "switchToCelestialSphere": "Switch to Celestial Sphere",
+    "switchingSystems": "Switching systems…",
+    "labTools": "Lab tools",
+    "celestialPoleAltitude": "Celestial pole altitude = {{altitude}}°",
+    "guidedPrompts": "Explore",
+    "promptNext": "Next",
+    "promptPrevious": "Previous",
+    "prompt1": "Switch systems, then change the latitude. How does the altitude of the celestial pole compare to your latitude?",
+    "prompt2": "At any latitude, about what percentage of the celestial sphere (of the stars) is above the horizon?",
+    "prompt3": "In the horizon view, where does the celestial equator sit relative to the horizon? Try a few latitudes.",
+    "prompt4": "Switch back to the celestial-sphere view. How has the horizon plane tilted for your latitude?",
     "star": "Star",
     "selectedStar": "Selected Star",
     "rightAscension": "RA",
@@ -95,10 +107,10 @@
     "celestialSphere": {
       "screenSummary": {
         "playArea": "The play area shows the celestial sphere with the celestial equator, the ecliptic, the celestial poles, and the observer's horizon plane cutting through it.",
-        "controlArea": "The control area lets you set the latitude, switch between the celestial-sphere and horizon views, animate time, show or hide the celestial equator, the 0h circle, the grid, the sphere outline, the horizon plane, the labels, and stars below the horizon, and reset the simulation.",
-        "interactionHint": "Explore how the celestial sphere is oriented relative to your horizon."
+        "controlArea": "The control area lets you set the latitude, switch between the celestial-sphere and horizon systems, follow guided prompts, open lab tools for time and appearance, and reset the simulation.",
+        "interactionHint": "Switch systems and change the latitude to see how the celestial pole sits above the horizon."
       },
-      "currentDetails": "The observer is at latitude {{latitude}} degrees. The local sidereal time is {{time}} hours."
+      "currentDetails": "The observer is at latitude {{latitude}} degrees. The local sidereal time is {{time}} hours. The celestial pole altitude is {{poleAltitude}} degrees."
     },
     "explorer": {
       "screenSummary": {

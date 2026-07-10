@@ -13,10 +13,10 @@
  *   - interactionHintContent — a short hint on how to get started
  *
  * `currentDetailsContent` is a live `PatternStringProperty`: it fills the
- * localized pattern with the observer's latitude and the local sidereal time,
- * and updates automatically as the model changes.
+ * localized pattern with the observer's latitude, the local sidereal time, and
+ * the celestial-pole altitude (= |latitude|), and updates as the model changes.
  */
-import { PatternStringProperty } from "scenerystack/axon";
+import { DerivedProperty, PatternStringProperty } from "scenerystack/axon";
 import { ScreenSummaryContent } from "scenerystack/sim";
 import { StringManager } from "../../i18n/StringManager.js";
 import type { CelestialSphereModel } from "../model/CelestialSphereModel.js";
@@ -26,13 +26,16 @@ export class CelestialSphereScreenSummaryContent extends ScreenSummaryContent {
     const a11y = StringManager.getInstance().getCelestialSphereA11yStrings();
     const sky = model.sky;
 
+    const poleAltitudeProperty = new DerivedProperty([sky.latitudeProperty], (latitude) => Math.abs(latitude));
+
     const currentDetails = new PatternStringProperty(
       a11y.currentDetailsStringProperty,
       {
         latitude: sky.latitudeProperty,
         time: sky.siderealTimeProperty,
+        poleAltitude: poleAltitudeProperty,
       },
-      { decimalPlaces: { latitude: 0, time: 1 } },
+      { decimalPlaces: { latitude: 0, time: 1, poleAltitude: 0 } },
     );
 
     super({

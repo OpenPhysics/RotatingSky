@@ -20,6 +20,18 @@
     "viewSystem": "Vista",
     "celestialSphereView": "Esfera celeste",
     "horizonView": "Horizonte",
+    "switchToHorizon": "Cambiar al horizonte",
+    "switchToCelestialSphere": "Cambiar a la esfera celeste",
+    "switchingSystems": "Cambiando de sistemas…",
+    "labTools": "Herramientas de laboratorio",
+    "celestialPoleAltitude": "Altitud del polo celeste = {{altitude}}°",
+    "guidedPrompts": "Explorar",
+    "promptNext": "Siguiente",
+    "promptPrevious": "Anterior",
+    "prompt1": "Cambia de sistema y luego modifica la latitud. ¿Cómo se compara la altitud del polo celeste con tu latitud?",
+    "prompt2": "En cualquier latitud, ¿aproximadamente qué porcentaje de la esfera celeste (de las estrellas) está por encima del horizonte?",
+    "prompt3": "En la vista del horizonte, ¿dónde queda el ecuador celeste respecto al horizonte? Prueba varias latitudes.",
+    "prompt4": "Vuelve a la vista de la esfera celeste. ¿Cómo se ha inclinado el plano del horizonte para tu latitud?",
     "star": "Estrella",
     "selectedStar": "Estrella seleccionada",
     "rightAscension": "AR",
@@ -95,10 +107,10 @@
     "celestialSphere": {
       "screenSummary": {
         "playArea": "El área de juego muestra la esfera celeste con el ecuador celeste, la eclíptica, los polos celestes y el plano del horizonte del observador que la atraviesa.",
-        "controlArea": "El área de control permite ajustar la latitud, alternar entre la vista de la esfera celeste y la del horizonte, animar el tiempo, mostrar u ocultar el ecuador celeste, el círculo de 0 h, la cuadrícula, el contorno de la esfera, el plano del horizonte, las etiquetas y las estrellas bajo el horizonte, y reiniciar la simulación.",
-        "interactionHint": "Explora cómo se orienta la esfera celeste respecto a tu horizonte."
+        "controlArea": "El área de control permite ajustar la latitud, alternar entre los sistemas de la esfera celeste y del horizonte, seguir las preguntas guiadas, abrir las herramientas de laboratorio para el tiempo y la apariencia, y reiniciar la simulación.",
+        "interactionHint": "Cambia de sistema y modifica la latitud para ver cómo queda el polo celeste sobre el horizonte."
       },
-      "currentDetails": "El observador está a una latitud de {{latitude}} grados. El tiempo sidéreo local es de {{time}} horas."
+      "currentDetails": "El observador está a una latitud de {{latitude}} grados. El tiempo sidéreo local es de {{time}} horas. La altitud del polo celeste es de {{poleAltitude}} grados."
     },
     "explorer": {
       "screenSummary": {

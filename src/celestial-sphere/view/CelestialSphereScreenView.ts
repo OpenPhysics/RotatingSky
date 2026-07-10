@@ -2,17 +2,25 @@
  * CelestialSphereScreenView.ts
  *
  * The celestial sphere with the Earth globe at its centre and the observer's
- * horizon plane tilted by latitude. A "view" button morphs smoothly between the
- * celestial-sphere orientation and the horizon orientation. Drag to rotate.
+ * horizon plane tilted by latitude. A "Switch systems" button morphs smoothly
+ * between the celestial-sphere orientation and the horizon orientation. The
+ * default control set is bridge-first (latitude, switch, pole altitude, guided
+ * prompts); time, appearance, and the guide star live under collapsed Lab tools.
  */
 
-import { DerivedProperty, Multilink, PatternStringProperty, type TReadOnlyProperty } from "scenerystack/axon";
+import {
+  BooleanProperty,
+  DerivedProperty,
+  Multilink,
+  PatternStringProperty,
+  type TReadOnlyProperty,
+} from "scenerystack/axon";
 import { clamp, Dimension2, Range, toFixed, Vector2 } from "scenerystack/dot";
 import { HBox, Rectangle, Text, VBox } from "scenerystack/scenery";
 import { NumberControl, PhetFont, ResetAllButton, TimeControlNode } from "scenerystack/scenery-phet";
 import type { ScreenViewOptions } from "scenerystack/sim";
 import { ScreenView } from "scenerystack/sim";
-import { Checkbox, HSlider, RectangularPushButton } from "scenerystack/sun";
+import { AccordionBox, Checkbox, HSlider, RectangularPushButton } from "scenerystack/sun";
 import { Animation, Easing } from "scenerystack/twixt";
 import {
   FLAT_PLAY_PAUSE_STEP_BUTTON_OPTIONS,
@@ -38,6 +46,7 @@ import {
 import { SkyProjection } from "../../common/SkyProjection.js";
 import { frameMatrixForBlend } from "../../common/skyMorph.js";
 import { attachSkyCameraInteraction } from "../../common/view/attachSkyCameraInteraction.js";
+import { CelestialPoleAltitudeNode } from "../../common/view/CelestialPoleAltitudeNode.js";
 import { CelestialSphereNode } from "../../common/view/CelestialSphereNode.js";
 import { CoordinateGuideNode } from "../../common/view/CoordinateGuideNode.js";
 import { EarthGlobeNode } from "../../common/view/EarthGlobeNode.js";
@@ -50,11 +59,14 @@ import {
   type EarthMapResolution,
   LATITUDE_RANGE,
   PANEL_CONTENT_SPACING,
+  PANEL_CORNER_RADIUS,
   PANEL_TITLE_FONT_SIZE,
+  PANEL_X_MARGIN,
+  PANEL_Y_MARGIN,
   RESET_ALL_BUTTON_BOTTOM_MARGIN,
   SCREEN_VIEW_MARGIN,
 } from "../../RotatingSkyConstants.js";
-import type { CelestialSphereModel } from "../model/CelestialSphereModel.js";
+import { type CelestialSphereModel, GUIDED_PROMPT_COUNT } from "../model/CelestialSphereModel.js";
 import { CelestialSphereScreenSummaryContent } from "./CelestialSphereScreenSummaryContent.js";
 
 type CelestialSphereScreenViewOptions = ScreenViewOptions & {
@@ -64,6 +76,10 @@ type CelestialSphereScreenViewOptions = ScreenViewOptions & {
 const MORPH_DURATION = 1.2; // seconds
 const RA_RANGE = new Range(0, HOURS_PER_DAY);
 const DEC_RANGE = new Range(-90, 90);
+/** Show the pole-altitude arc once the morph is mostly toward the horizon. */
+const POLE_ALTITUDE_BLEND_THRESHOLD = 0.35;
+const PROMPT_TEXT_MAX_WIDTH = 200;
+const LAB_TOOLS_EXPAND_BUTTON_SIDE = 18;
 
 /** Fill the play area left of the right-hand control panels with the celestial sphere. */
 const layoutCelestialSphereProjection = (
@@ -103,40 +119,53 @@ export class CelestialSphereScreenView extends ScreenView {
     });
     this.addChild(backgroundRect);
 
-    // ── Control panel (built first so the sphere can fill the remaining play area) ─
+    // ── Switch-systems morph ──────────────────────────────────────────────────
     let morphAnimation: Animation | null = null;
     const morphTo = (target: number): void => {
       morphAnimation?.stop();
+      model.isMorphingProperty.value = true;
       morphAnimation = new Animation({
         property: model.systemBlendProperty,
         to: target,
         duration: MORPH_DURATION,
         easing: Easing.CUBIC_IN_OUT,
       });
+      morphAnimation.endedEmitter.addListener(() => {
+        model.isMorphingProperty.value = false;
+      });
       morphAnimation.start();
     };
 
-    const viewButtonLabel = new DerivedProperty(
-      [model.systemBlendProperty, controls.horizonViewStringProperty, controls.celestialSphereViewStringProperty],
-      (blend, horizon, celestial) => (blend < 0.5 ? horizon : celestial),
-    );
-    const viewButton = new RectangularPushButton({
-      ...FLAT_RECTANGULAR_BUTTON_OPTIONS,
-      content: new Text(viewButtonLabel, { font: new PhetFont(CONTROL_FONT_SIZE), fill: LIGHT_SURFACE_TEXT_FILL }),
-      listener: () => morphTo(model.systemBlendProperty.value < 0.5 ? 1 : 0),
-      accessibleName: viewButtonLabel,
-    });
-
-    const timeControl = new TimeControlNode(sky.timer.isPlayingProperty, {
-      timeSpeedProperty: sky.timeSpeedProperty,
-      ...TIME_CONTROL_SPEED_RADIO_OPTIONS,
-      playPauseStepButtonOptions: {
-        ...FLAT_PLAY_PAUSE_STEP_BUTTON_OPTIONS,
-        stepForwardButtonOptions: {
-          ...FLAT_PLAY_PAUSE_STEP_BUTTON_OPTIONS.stepForwardButtonOptions,
-          listener: () => sky.stepForward(),
-        },
+    const switchButtonLabel = new DerivedProperty(
+      [
+        model.systemBlendProperty,
+        model.isMorphingProperty,
+        controls.switchToHorizonStringProperty,
+        controls.switchToCelestialSphereStringProperty,
+        controls.switchingSystemsStringProperty,
+      ],
+      (blend, isMorphing, toHorizon, toCelestial, switching) => {
+        if (isMorphing) {
+          return switching;
+        }
+        return blend < 0.5 ? toHorizon : toCelestial;
       },
+    );
+    const switchButton = new RectangularPushButton({
+      ...FLAT_RECTANGULAR_BUTTON_OPTIONS,
+      content: new Text(switchButtonLabel, {
+        font: new PhetFont(CONTROL_FONT_SIZE),
+        fill: LIGHT_SURFACE_TEXT_FILL,
+        maxWidth: 180,
+      }),
+      listener: () => {
+        if (model.isMorphingProperty.value) {
+          return;
+        }
+        morphTo(model.systemBlendProperty.value < 0.5 ? 1 : 0);
+      },
+      accessibleName: switchButtonLabel,
+      enabledProperty: new DerivedProperty([model.isMorphingProperty], (isMorphing) => !isMorphing),
     });
 
     const textFill = RotatingSkyColors.textColorProperty;
@@ -149,6 +178,98 @@ export class CelestialSphereScreenView extends ScreenView {
         valuePattern: "{{value}}°",
       },
       titleNodeOptions: { font: new PhetFont(CONTROL_FONT_SIZE), fill: textFill, maxWidth: 160 },
+    });
+
+    const poleAltitudeAbsProperty = new DerivedProperty([sky.latitudeProperty], (latitude) => Math.abs(latitude));
+    const poleAltitudeReadout = new Text(
+      new PatternStringProperty(
+        controls.celestialPoleAltitudeStringProperty,
+        { altitude: poleAltitudeAbsProperty },
+        { decimalPlaces: { altitude: 0 } },
+      ),
+      { font: new PhetFont(CONTROL_FONT_SIZE), fill: textFill, maxWidth: 200 },
+    );
+    // Live φ readout is always available; the on-sphere arc appears near horizon blend.
+    const poleAltitudeVisibleOnSphereProperty = new DerivedProperty(
+      [model.systemBlendProperty],
+      (blend) => blend >= POLE_ALTITUDE_BLEND_THRESHOLD,
+    );
+
+    // ── Guided prompts ────────────────────────────────────────────────────────
+    const promptStringProperties = [
+      controls.prompt1StringProperty,
+      controls.prompt2StringProperty,
+      controls.prompt3StringProperty,
+      controls.prompt4StringProperty,
+    ] as const;
+    const activePromptStringProperty = new DerivedProperty(
+      [model.guidedPromptIndexProperty, ...promptStringProperties],
+      (index, ...prompts) => {
+        const prompt = prompts[index] ?? prompts[0];
+        return prompt ?? "";
+      },
+    );
+    const promptText = new Text(activePromptStringProperty, {
+      font: new PhetFont(CONTROL_FONT_SIZE),
+      fill: textFill,
+      maxWidth: PROMPT_TEXT_MAX_WIDTH,
+    });
+    const promptIndexLabel = new Text(
+      new DerivedProperty([model.guidedPromptIndexProperty], (index) => `${index + 1} / ${GUIDED_PROMPT_COUNT}`),
+      { font: new PhetFont(CONTROL_FONT_SIZE), fill: textFill },
+    );
+    const previousPromptButton = new RectangularPushButton({
+      ...FLAT_RECTANGULAR_BUTTON_OPTIONS,
+      content: new Text(controls.promptPreviousStringProperty, {
+        font: new PhetFont(CONTROL_FONT_SIZE),
+        fill: LIGHT_SURFACE_TEXT_FILL,
+      }),
+      listener: () => {
+        model.guidedPromptIndexProperty.value =
+          (model.guidedPromptIndexProperty.value + GUIDED_PROMPT_COUNT - 1) % GUIDED_PROMPT_COUNT;
+      },
+      accessibleName: controls.promptPreviousStringProperty,
+    });
+    const nextPromptButton = new RectangularPushButton({
+      ...FLAT_RECTANGULAR_BUTTON_OPTIONS,
+      content: new Text(controls.promptNextStringProperty, {
+        font: new PhetFont(CONTROL_FONT_SIZE),
+        fill: LIGHT_SURFACE_TEXT_FILL,
+      }),
+      listener: () => {
+        model.guidedPromptIndexProperty.value = (model.guidedPromptIndexProperty.value + 1) % GUIDED_PROMPT_COUNT;
+      },
+      accessibleName: controls.promptNextStringProperty,
+    });
+    const promptsPanel = new RotatingSkyPanel(
+      new VBox({
+        align: "left",
+        spacing: PANEL_CONTENT_SPACING,
+        children: [
+          new Text(controls.guidedPromptsStringProperty, {
+            font: new PhetFont({ size: PANEL_TITLE_FONT_SIZE, weight: "bold" }),
+            fill: textFill,
+          }),
+          promptText,
+          new HBox({
+            spacing: 8,
+            children: [previousPromptButton, promptIndexLabel, nextPromptButton],
+          }),
+        ],
+      }),
+    );
+
+    // ── Lab tools (collapsed): time, appearance, guide star ───────────────────
+    const timeControl = new TimeControlNode(sky.timer.isPlayingProperty, {
+      timeSpeedProperty: sky.timeSpeedProperty,
+      ...TIME_CONTROL_SPEED_RADIO_OPTIONS,
+      playPauseStepButtonOptions: {
+        ...FLAT_PLAY_PAUSE_STEP_BUTTON_OPTIONS,
+        stepForwardButtonOptions: {
+          ...FLAT_PLAY_PAUSE_STEP_BUTTON_OPTIONS.stepForwardButtonOptions,
+          listener: () => sky.stepForward(),
+        },
+      },
     });
 
     const checkbox = (
@@ -180,7 +301,6 @@ export class CelestialSphereScreenView extends ScreenView {
       labelsCheckbox,
       hideBelowCheckbox,
     ];
-    // Two-column grid keeps the panel short enough to share the right edge with Reset All.
     const checkboxGrid = new HBox({
       spacing: 10,
       align: "top",
@@ -197,21 +317,6 @@ export class CelestialSphereScreenView extends ScreenView {
         }),
       ],
     });
-
-    const panel = new RotatingSkyPanel(
-      new VBox({
-        align: "left",
-        spacing: PANEL_CONTENT_SPACING,
-        children: [latitudeControl, viewButton, timeControl, checkboxGrid],
-      }),
-    );
-
-    // ── Star Position panel (RA/Dec sliders + Add Star checkbox) ───────────────
-    const panelTitle = (labelProperty: typeof controls.starPositionStringProperty): Text =>
-      new Text(labelProperty, {
-        font: new PhetFont({ size: PANEL_TITLE_FONT_SIZE, weight: "bold" }),
-        fill: textFill,
-      });
 
     const raSlider = new HSlider(model.guideRaProperty, RA_RANGE, {
       ...ROTATING_SKY_SLIDER_OPTIONS,
@@ -269,19 +374,53 @@ export class CelestialSphereScreenView extends ScreenView {
       },
     );
 
-    const starPositionPanel = new RotatingSkyPanel(
+    const labToolsExpandedProperty = new BooleanProperty(false);
+    const labToolsContent = new VBox({
+      align: "left",
+      spacing: PANEL_CONTENT_SPACING,
+      children: [
+        timeControl,
+        checkboxGrid,
+        new Text(controls.starPositionStringProperty, {
+          font: new PhetFont({ size: PANEL_TITLE_FONT_SIZE, weight: "bold" }),
+          fill: textFill,
+        }),
+        raGroup,
+        decGroup,
+        addStarCheckbox,
+      ],
+    });
+    const labToolsAccordion = new AccordionBox(labToolsContent, {
+      titleNode: new Text(controls.labToolsStringProperty, {
+        font: new PhetFont({ size: PANEL_TITLE_FONT_SIZE, weight: "bold" }),
+        fill: textFill,
+        maxWidth: 160,
+      }),
+      titleAlignX: "left",
+      expandedProperty: labToolsExpandedProperty,
+      fill: RotatingSkyColors.panelBackgroundColorProperty,
+      stroke: RotatingSkyColors.panelBorderColorProperty,
+      cornerRadius: PANEL_CORNER_RADIUS,
+      contentXMargin: PANEL_X_MARGIN,
+      contentYMargin: PANEL_Y_MARGIN,
+      expandCollapseButtonOptions: { sideLength: LAB_TOOLS_EXPAND_BUTTON_SIDE },
+      useExpandedBoundsWhenCollapsed: false,
+      accessibleName: controls.labToolsStringProperty,
+    });
+
+    // Bridge-first primary panel: latitude, switch, pole altitude identity.
+    const primaryPanel = new RotatingSkyPanel(
       new VBox({
         align: "left",
         spacing: PANEL_CONTENT_SPACING,
-        children: [panelTitle(controls.starPositionStringProperty), raGroup, decGroup, addStarCheckbox],
+        children: [latitudeControl, switchButton, poleAltitudeReadout],
       }),
     );
 
-    // Stack the Star Position panel beneath the main control panel on the right.
     const panelColumn = new VBox({
       align: "center",
       spacing: 8,
-      children: [panel, starPositionPanel],
+      children: [primaryPanel, promptsPanel, labToolsAccordion],
     });
     panelColumn.right = this.layoutBounds.maxX - SCREEN_VIEW_MARGIN;
     panelColumn.top = this.layoutBounds.minY + SCREEN_VIEW_MARGIN;
@@ -322,6 +461,13 @@ export class CelestialSphereScreenView extends ScreenView {
       horizonPlaneNode.backLayer.visible = visible;
       horizonPlaneNode.frontLayer.visible = visible;
     });
+
+    const poleAltitudeNode = new CelestialPoleAltitudeNode(
+      this.projection,
+      sky.latitudeProperty,
+      sky.siderealTimeProperty,
+      poleAltitudeVisibleOnSphereProperty,
+    );
 
     const coordinateGuideNode = new CoordinateGuideNode(this.projection, {
       guideRaProperty: model.guideRaProperty,
@@ -374,6 +520,7 @@ export class CelestialSphereScreenView extends ScreenView {
     this.addChild(globeNode);
     this.addChild(sphereNode.frontLayer);
     this.addChild(horizonPlaneNode.frontLayer);
+    this.addChild(poleAltitudeNode);
     this.addChild(coordinateGuideNode.frontLayer);
     this.addChild(starsNode);
 
@@ -390,6 +537,8 @@ export class CelestialSphereScreenView extends ScreenView {
       ...FLAT_RESET_ALL_BUTTON_OPTIONS,
       listener: () => {
         morphAnimation?.stop();
+        model.isMorphingProperty.value = false;
+        labToolsExpandedProperty.reset();
         model.reset();
         this.reset();
       },
@@ -401,7 +550,10 @@ export class CelestialSphereScreenView extends ScreenView {
     this.pdomPlayAreaNode.pdomOrder = [backgroundRect, coordinateGuideNode.frontLayer, starsNode];
     this.pdomControlAreaNode.pdomOrder = [
       latitudeControl,
-      viewButton,
+      switchButton,
+      previousPromptButton,
+      nextPromptButton,
+      labToolsAccordion,
       timeControl,
       ...appearanceCheckboxes,
       raSlider,

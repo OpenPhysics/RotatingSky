@@ -20,6 +20,18 @@
     "viewSystem": "Vue",
     "celestialSphereView": "Sphère céleste",
     "horizonView": "Horizon",
+    "switchToHorizon": "Passer à l'horizon",
+    "switchToCelestialSphere": "Passer à la sphère céleste",
+    "switchingSystems": "Changement de systèmes…",
+    "labTools": "Outils de laboratoire",
+    "celestialPoleAltitude": "Altitude du pôle céleste = {{altitude}}°",
+    "guidedPrompts": "Explorer",
+    "promptNext": "Suivant",
+    "promptPrevious": "Précédent",
+    "prompt1": "Changez de système, puis modifiez la latitude. Comment l'altitude du pôle céleste se compare-t-elle à votre latitude ?",
+    "prompt2": "À n'importe quelle latitude, environ quel pourcentage de la sphère céleste (des étoiles) est au-dessus de l'horizon ?",
+    "prompt3": "Dans la vue horizon, où se situe l'équateur céleste par rapport à l'horizon ? Essayez plusieurs latitudes.",
+    "prompt4": "Revenez à la vue sphère céleste. Comment le plan de l'horizon s'est-il incliné pour votre latitude ?",
     "star": "Étoile",
     "selectedStar": "Étoile sélectionnée",
     "rightAscension": "AD",
@@ -95,10 +107,10 @@
     "celestialSphere": {
       "screenSummary": {
         "playArea": "La zone de jeu montre la sphère céleste avec l'équateur céleste, l'écliptique, les pôles célestes et le plan de l'horizon de l'observateur qui la traverse.",
-        "controlArea": "La zone de contrôle permet de régler la latitude, de basculer entre la vue de la sphère céleste et la vue de l'horizon, d'animer le temps, d'afficher ou de masquer l'équateur céleste, le cercle 0 h, la grille, le contour de la sphère, le plan de l'horizon, les étiquettes et les étoiles sous l'horizon, et de réinitialiser la simulation.",
-        "interactionHint": "Explorez l'orientation de la sphère céleste par rapport à votre horizon."
+        "controlArea": "La zone de contrôle permet de régler la latitude, de basculer entre les systèmes sphère céleste et horizon, de suivre les questions guidées, d'ouvrir les outils de laboratoire pour le temps et l'affichage, et de réinitialiser la simulation.",
+        "interactionHint": "Changez de système et modifiez la latitude pour voir comment le pôle céleste se place au-dessus de l'horizon."
       },
-      "currentDetails": "L'observateur est à une latitude de {{latitude}} degrés. Le temps sidéral local est de {{time}} heures."
+      "currentDetails": "L'observateur est à une latitude de {{latitude}} degrés. Le temps sidéral local est de {{time}} heures. L'altitude du pôle céleste est de {{poleAltitude}} degrés."
     },
     "explorer": {
       "screenSummary": {
