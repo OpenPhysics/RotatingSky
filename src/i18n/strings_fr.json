@@ -105,5 +105,25 @@
     "earthMapResolution": "Détail de la carte terrestre",
     "earthMapResolutionLow": "Faible (contour NAAP)",
     "earthMapResolutionHigh": "Élevé (Natural Earth)"
+  },
+  "keyboardHelp": {
+    "sky": "Ciel",
+    "moveObserverLocation": "Déplacer la position de l'observateur",
+    "moveObserverLocationDescription": "Les flèches ajustent la latitude et la longitude sur la carte de la Terre.",
+    "moveGuideStar": "Déplacer l'étoile guide",
+    "moveGuideStarDescription": "Les flèches ajustent l'ascension droite et la déclinaison de l'étoile guide.",
+    "rotateSky": "Faire pivoter la vue du ciel",
+    "rotateSkyDescription": "Les flèches font pivoter la caméra. Faites glisser avec la souris pour la même rotation libre.",
+    "rotateAboutZenith": "Pivoter autour du zénith",
+    "rotateAboutZenithDescription": "Alt plus les flèches font tourner la vue uniquement autour de l'axe vertical. Correspond à Alt-glisser.",
+    "advanceSiderealTime": "Avancer le temps sidéral",
+    "advanceSiderealTimeDescription": "Ctrl plus flèche gauche ou droite avance ou recule le temps sidéral. Correspond à Ctrl-glisser.",
+    "moveStar": "Déplacer l'étoile",
+    "moveStarDescription": "Avec une étoile focalisée, les flèches ajustent son ascension droite et sa déclinaison.",
+    "addStarAtCenter": "Ajouter une étoile au centre",
+    "addStarAtCenterDescription": "Maj plus Entrée ajoute une étoile au centre de la vue. Maj-clic ajoute aussi une étoile.",
+    "skyView": "Vue du ciel",
+    "skyViewHelp": "Les flèches font pivoter la caméra. Alt plus flèches pivote autour du zénith. Ctrl plus gauche ou droite avance le temps sidéral.",
+    "starHelp": "Les flèches ajustent l'ascension droite et la déclinaison. Faites glisser avec la souris pour placer l'étoile."
   }
 }

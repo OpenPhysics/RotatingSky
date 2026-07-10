@@ -17,7 +17,7 @@
 
 import { DerivedProperty, Property, type TReadOnlyProperty } from "scenerystack/axon";
 import { clamp, Vector2 } from "scenerystack/dot";
-import { DragListener, HBox, Node, Rectangle, Text, VBox } from "scenerystack/scenery";
+import { HBox, Node, Rectangle, Text, VBox } from "scenerystack/scenery";
 import { NumberControl, PhetFont, ResetAllButton, TimeControlNode } from "scenerystack/scenery-phet";
 import type { ScreenViewOptions } from "scenerystack/sim";
 import { ScreenView } from "scenerystack/sim";
@@ -65,6 +65,7 @@ import {
   radToDeg,
 } from "../../common/SkyCoordinates.js";
 import { SkyProjection } from "../../common/SkyProjection.js";
+import { attachSkyCameraInteraction } from "../../common/view/attachSkyCameraInteraction.js";
 import { CelestialEquatorOnHorizonNode } from "../../common/view/CelestialEquatorOnHorizonNode.js";
 import { CelestialSphereNode } from "../../common/view/CelestialSphereNode.js";
 import { DeclinationRegionsNode } from "../../common/view/DeclinationRegionsNode.js";
@@ -104,9 +105,6 @@ type ExplorerScreenViewOptions = ScreenViewOptions & {
   earthMapResolutionProperty: TReadOnlyProperty<EarthMapResolution>;
 };
 
-const ROTATE_SPEED = 0.01;
-/** Sidereal hours advanced per pixel of Ctrl-drag ("rotate about NCP" mode). */
-const TIME_DRAG_RATE = 0.02;
 const SPHERE_RADIUS = 118;
 
 export class ExplorerScreenView extends ScreenView {
@@ -137,6 +135,7 @@ export class ExplorerScreenView extends ScreenView {
     );
     this.localSiderealTimeProperty = localSiderealTimeProperty;
     const controls = StringManager.getInstance().getControls();
+    const keyboardHelp = StringManager.getInstance().getKeyboardHelpStrings();
     const textFill = RotatingSkyColors.textColorProperty;
 
     const backgroundRect = new Rectangle(0, 0, this.layoutBounds.width, this.layoutBounds.height, {
@@ -181,13 +180,17 @@ export class ExplorerScreenView extends ScreenView {
       pointToEquatorial: (point) => this.celestialPointToEquatorial(point),
       redrawProperties: [this.celProjection.viewMatrixProperty],
       accessibleName: controls.starStringProperty,
+      accessibleHelpText: keyboardHelp.starHelpStringProperty,
     });
 
     const celLabel = viewLabel(controls.celestialSphereViewStringProperty);
     celLabel.centerX = this.celProjection.center.x;
     celLabel.top = SCREEN_VIEW_MARGIN + 14;
     this.addChild(celLabel);
-    this.addChild(this.addSphereInteraction(this.celProjection, (point) => this.celestialPointToEquatorial(point)));
+    const celSkyRegion = this.addSphereInteraction(this.celProjection, (point) =>
+      this.celestialPointToEquatorial(point),
+    );
+    this.addChild(celSkyRegion);
     this.addChild(celRegions);
     const celHorizonPlane = new HorizonPlaneNode(this.celProjection, sky.latitudeProperty, localSiderealTimeProperty);
     this.addChild(celSphere.backLayer);
@@ -268,6 +271,7 @@ export class ExplorerScreenView extends ScreenView {
       pointToEquatorial: (point) => this.horizonPointToEquatorial(point),
       redrawProperties: [sky.latitudeProperty, localSiderealTimeProperty, this.horProjection.viewMatrixProperty],
       accessibleName: controls.starStringProperty,
+      accessibleHelpText: keyboardHelp.starHelpStringProperty,
     });
 
     // The same declination bands as the celestial sphere, mapped into the horizon
@@ -301,7 +305,8 @@ export class ExplorerScreenView extends ScreenView {
     horLabel.centerX = this.horProjection.center.x;
     horLabel.top = SCREEN_VIEW_MARGIN + 14;
     this.addChild(horLabel);
-    this.addChild(this.addSphereInteraction(this.horProjection, (point) => this.horizonPointToEquatorial(point)));
+    const horSkyRegion = this.addSphereInteraction(this.horProjection, (point) => this.horizonPointToEquatorial(point));
+    this.addChild(horSkyRegion);
     this.addChild(horRegions);
     this.addChild(new HorizonGroundNode(this.horProjection, { labelsVisibleProperty: sky.labelsVisibleProperty }));
     this.addChild(
@@ -614,29 +619,21 @@ export class ExplorerScreenView extends ScreenView {
     // The combo-box list must float above the panels.
     this.addChild(listParent);
 
-    this.addChild(
-      new Node({
-        pdomOrder: [
-          map,
-          latitudeControl,
-          longitudeControl,
-          timeControl,
-          durationCombo,
-          rateSlider,
-          ...appearanceCheckboxes,
-          patternCombo,
-          addStarButton,
-          removeAllButton,
-          trailRadioGroup,
-          resetTrailsButton,
-          celReadout,
-          horReadout,
-          celStars,
-          horStars,
-          resetAllButton,
-        ],
-      }),
-    );
+    this.pdomPlayAreaNode.pdomOrder = [map, celSkyRegion, horSkyRegion, celStars, horStars, celReadout, horReadout];
+    this.pdomControlAreaNode.pdomOrder = [
+      latitudeControl,
+      longitudeControl,
+      timeControl,
+      durationCombo,
+      rateSlider,
+      ...appearanceCheckboxes,
+      patternCombo,
+      addStarButton,
+      removeAllButton,
+      trailRadioGroup,
+      resetTrailsButton,
+      resetAllButton,
+    ];
   }
 
   /** Screen point on the celestial sphere → equatorial coordinates. */
@@ -657,9 +654,9 @@ export class ExplorerScreenView extends ScreenView {
   }
 
   /**
-   * Transparent region behind a sphere: drag rotates the camera; shift-click adds
-   * a star at the clicked location. Alt-drag spins about the vertical axis only
-   * ("rotate about zenith"); Ctrl-drag advances sidereal time ("rotate about NCP").
+   * Transparent region behind a sphere: drag / arrow keys rotate the camera;
+   * Shift-click / Shift+Enter adds a star. Alt and Ctrl modes match the other
+   * screens (see {@link attachSkyCameraInteraction}).
    */
   private addSphereInteraction(
     projection: SkyProjection,
@@ -669,55 +666,18 @@ export class ExplorerScreenView extends ScreenView {
     const region = new Rectangle(projection.center.x - size / 2, projection.center.y - size / 2, size, size, {
       fill: "rgba(0,0,0,0)",
     });
+    const keyboardHelp = StringManager.getInstance().getKeyboardHelpStrings();
 
-    let lastPoint: Vector2 | null = null;
-    let dragMode: "simple" | "zenith" | "ncp" = "simple";
-    region.addInputListener(
-      new DragListener({
-        start: (event) => {
-          const domEvent = event.domEvent as {
-            shiftKey?: boolean;
-            altKey?: boolean;
-            ctrlKey?: boolean;
-            metaKey?: boolean;
-          } | null;
-          const shift = Boolean(domEvent?.shiftKey);
-          if (shift) {
-            const local = region.globalToParentPoint(event.pointer.point);
-            const { raHours, decDeg } = pointToEquatorial(local);
-            this.sky.addStar(raHours, decDeg);
-            lastPoint = null;
-          } else {
-            lastPoint = event.pointer.point.copy();
-            dragMode = domEvent?.altKey ? "zenith" : domEvent?.ctrlKey || domEvent?.metaKey ? "ncp" : "simple";
-          }
-        },
-        drag: (event) => {
-          if (!lastPoint) {
-            return;
-          }
-          const p = event.pointer.point;
-          const dx = p.x - lastPoint.x;
-          const dy = lastPoint.y - p.y;
-          switch (dragMode) {
-            case "zenith":
-              projection.rotateAboutZenith(dx * ROTATE_SPEED);
-              break;
-            case "ncp":
-              this.sky.advanceSiderealTime(-dx * TIME_DRAG_RATE);
-              break;
-            default:
-              projection.rotateBy(dx * ROTATE_SPEED, dy * ROTATE_SPEED);
-              break;
-          }
-          lastPoint = p.copy();
-        },
-        end: () => {
-          lastPoint = null;
-        },
-      }),
-    );
-    return region;
+    return attachSkyCameraInteraction(region, {
+      projection,
+      sky: this.sky,
+      accessibleNameProperty: keyboardHelp.skyViewStringProperty,
+      accessibleHelpTextProperty: keyboardHelp.skyViewHelpStringProperty,
+      onAddStarAt: (parentPoint) => {
+        const { raHours, decDeg } = pointToEquatorial(parentPoint);
+        this.sky.addStar(raHours, decDeg);
+      },
+    });
   }
 
   public reset(): void {

@@ -105,5 +105,25 @@
     "earthMapResolution": "Earth Map Detail",
     "earthMapResolutionLow": "Low (NAAP outline)",
     "earthMapResolutionHigh": "High (Natural Earth)"
+  },
+  "keyboardHelp": {
+    "sky": "Sky",
+    "moveObserverLocation": "Move observer location",
+    "moveObserverLocationDescription": "Arrow keys nudge latitude and longitude on the Earth map.",
+    "moveGuideStar": "Move guide star",
+    "moveGuideStarDescription": "Arrow keys nudge right ascension and declination of the guide star.",
+    "rotateSky": "Rotate sky view",
+    "rotateSkyDescription": "Arrow keys rotate the camera. Drag with the mouse for the same free rotation.",
+    "rotateAboutZenith": "Rotate about zenith",
+    "rotateAboutZenithDescription": "Alt plus arrow keys spins the view about the vertical axis only. Matches Alt-drag.",
+    "advanceSiderealTime": "Advance sidereal time",
+    "advanceSiderealTimeDescription": "Ctrl plus left or right arrow advances or rewinds sidereal time. Matches Ctrl-drag.",
+    "moveStar": "Move star",
+    "moveStarDescription": "With a star focused, arrow keys nudge its right ascension and declination.",
+    "addStarAtCenter": "Add star at view center",
+    "addStarAtCenterDescription": "Shift plus Enter adds a star at the center of the focused sky view. Shift-click also adds a star.",
+    "skyView": "Sky view",
+    "skyViewHelp": "Arrow keys rotate the camera. Alt plus arrows rotate about zenith. Ctrl plus left or right advances sidereal time.",
+    "starHelp": "Arrow keys nudge right ascension and declination. Drag with the mouse to place the star."
   }
 }

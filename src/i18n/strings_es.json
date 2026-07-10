@@ -105,5 +105,25 @@
     "earthMapResolution": "Detalle del mapa terrestre",
     "earthMapResolutionLow": "Bajo (contorno NAAP)",
     "earthMapResolutionHigh": "Alto (Natural Earth)"
+  },
+  "keyboardHelp": {
+    "sky": "Cielo",
+    "moveObserverLocation": "Mover la ubicación del observador",
+    "moveObserverLocationDescription": "Las flechas ajustan la latitud y la longitud en el mapa de la Tierra.",
+    "moveGuideStar": "Mover la estrella guía",
+    "moveGuideStarDescription": "Las flechas ajustan la ascensión recta y la declinación de la estrella guía.",
+    "rotateSky": "Rotar la vista del cielo",
+    "rotateSkyDescription": "Las flechas rotan la cámara. Arrastre con el ratón para la misma rotación libre.",
+    "rotateAboutZenith": "Rotar alrededor del cenit",
+    "rotateAboutZenithDescription": "Alt más las flechas giran la vista solo alrededor del eje vertical. Coincide con Alt-arrastrar.",
+    "advanceSiderealTime": "Avanzar el tiempo sidéreo",
+    "advanceSiderealTimeDescription": "Ctrl más flecha izquierda o derecha avanza o retrocede el tiempo sidéreo. Coincide con Ctrl-arrastrar.",
+    "moveStar": "Mover estrella",
+    "moveStarDescription": "Con una estrella enfocada, las flechas ajustan su ascensión recta y declinación.",
+    "addStarAtCenter": "Añadir estrella en el centro",
+    "addStarAtCenterDescription": "Mayús más Intro añade una estrella en el centro de la vista. Mayús-clic también añade una estrella.",
+    "skyView": "Vista del cielo",
+    "skyViewHelp": "Las flechas rotan la cámara. Alt más flechas rotan alrededor del cenit. Ctrl más izquierda o derecha avanza el tiempo sidéreo.",
+    "starHelp": "Las flechas ajustan la ascensión recta y la declinación. Arrastre con el ratón para colocar la estrella."
   }
 }

@@ -7,8 +7,8 @@
  */
 
 import { DerivedProperty, Multilink, PatternStringProperty, type TReadOnlyProperty } from "scenerystack/axon";
-import { clamp, Dimension2, Range, Vector2 } from "scenerystack/dot";
-import { DragListener, HBox, Node, Rectangle, Text, VBox } from "scenerystack/scenery";
+import { clamp, Dimension2, Range, toFixed, Vector2 } from "scenerystack/dot";
+import { HBox, Rectangle, Text, VBox } from "scenerystack/scenery";
 import { NumberControl, PhetFont, ResetAllButton, TimeControlNode } from "scenerystack/scenery-phet";
 import type { ScreenViewOptions } from "scenerystack/sim";
 import { ScreenView } from "scenerystack/sim";
@@ -37,6 +37,7 @@ import {
 } from "../../common/SkyCoordinates.js";
 import { SkyProjection } from "../../common/SkyProjection.js";
 import { frameMatrixForBlend } from "../../common/skyMorph.js";
+import { attachSkyCameraInteraction } from "../../common/view/attachSkyCameraInteraction.js";
 import { CelestialSphereNode } from "../../common/view/CelestialSphereNode.js";
 import { CoordinateGuideNode } from "../../common/view/CoordinateGuideNode.js";
 import { EarthGlobeNode } from "../../common/view/EarthGlobeNode.js";
@@ -60,9 +61,6 @@ type CelestialSphereScreenViewOptions = ScreenViewOptions & {
   earthMapResolutionProperty: TReadOnlyProperty<EarthMapResolution>;
 };
 
-const ROTATE_SPEED = 0.01;
-/** Sidereal hours advanced per pixel of Ctrl-drag ("rotate about NCP" mode). */
-const TIME_DRAG_RATE = 0.02;
 const MORPH_DURATION = 1.2; // seconds
 const RA_RANGE = new Range(0, HOURS_PER_DAY);
 const DEC_RANGE = new Range(-90, 90);
@@ -98,6 +96,7 @@ export class CelestialSphereScreenView extends ScreenView {
 
     const sky = model.sky;
     const controls = StringManager.getInstance().getControls();
+    const keyboardHelp = StringManager.getInstance().getKeyboardHelpStrings();
 
     const backgroundRect = new Rectangle(0, 0, this.layoutBounds.width, this.layoutBounds.height, {
       fill: RotatingSkyColors.backgroundColorProperty,
@@ -227,8 +226,11 @@ export class CelestialSphereScreenView extends ScreenView {
 
     const coordinateText = (valueProperty: TReadOnlyProperty<string>): Text =>
       new Text(valueProperty, { font: new PhetFont(CONTROL_FONT_SIZE), fill: textFill });
-    const raValue = new DerivedProperty([model.guideRaProperty], (ra) => `${ra.toFixed(1)} h`);
-    const decValue = new DerivedProperty([model.guideDecProperty], (dec) => `${dec >= 0 ? "+" : ""}${dec.toFixed(0)}°`);
+    const raValue = new DerivedProperty([model.guideRaProperty], (ra) => `${toFixed(ra, 1)} h`);
+    const decValue = new DerivedProperty(
+      [model.guideDecProperty],
+      (dec) => `${dec >= 0 ? "+" : ""}${toFixed(dec, 0)}°`,
+    );
     const raGroup = new VBox({
       align: "left",
       spacing: 3,
@@ -363,6 +365,7 @@ export class CelestialSphereScreenView extends ScreenView {
         this.projection.viewMatrixProperty,
       ],
       accessibleName: controls.starStringProperty,
+      accessibleHelpText: keyboardHelp.starHelpStringProperty,
     });
 
     this.addChild(sphereNode.backLayer);
@@ -374,43 +377,12 @@ export class CelestialSphereScreenView extends ScreenView {
     this.addChild(coordinateGuideNode.frontLayer);
     this.addChild(starsNode);
 
-    // Drag the background to rotate the camera. Alt-drag spins about the vertical
-    // axis only ("rotate about zenith"); Ctrl-drag advances sidereal time
-    // ("rotate about NCP").
-    let lastPoint: Vector2 | null = null;
-    let dragMode: "simple" | "zenith" | "ncp" = "simple";
-    backgroundRect.addInputListener(
-      new DragListener({
-        start: (event) => {
-          const domEvent = event.domEvent as { altKey?: boolean; ctrlKey?: boolean; metaKey?: boolean } | null;
-          lastPoint = event.pointer.point.copy();
-          dragMode = domEvent?.altKey ? "zenith" : domEvent?.ctrlKey || domEvent?.metaKey ? "ncp" : "simple";
-        },
-        drag: (event) => {
-          if (!lastPoint) {
-            return;
-          }
-          const p = event.pointer.point;
-          const dx = p.x - lastPoint.x;
-          const dy = lastPoint.y - p.y;
-          switch (dragMode) {
-            case "zenith":
-              this.projection.rotateAboutZenith(dx * ROTATE_SPEED);
-              break;
-            case "ncp":
-              sky.advanceSiderealTime(-dx * TIME_DRAG_RATE);
-              break;
-            default:
-              this.projection.rotateBy(dx * ROTATE_SPEED, dy * ROTATE_SPEED);
-              break;
-          }
-          lastPoint = p.copy();
-        },
-        end: () => {
-          lastPoint = null;
-        },
-      }),
-    );
+    attachSkyCameraInteraction(backgroundRect, {
+      projection: this.projection,
+      sky,
+      accessibleNameProperty: keyboardHelp.skyViewStringProperty,
+      accessibleHelpTextProperty: keyboardHelp.skyViewHelpStringProperty,
+    });
 
     this.addChild(panelColumn);
 
@@ -426,22 +398,17 @@ export class CelestialSphereScreenView extends ScreenView {
     });
     this.addChild(resetAllButton);
 
-    this.addChild(
-      new Node({
-        pdomOrder: [
-          latitudeControl,
-          viewButton,
-          timeControl,
-          ...appearanceCheckboxes,
-          raSlider,
-          decSlider,
-          addStarCheckbox,
-          coordinateGuideNode.frontLayer,
-          starsNode,
-          resetAllButton,
-        ],
-      }),
-    );
+    this.pdomPlayAreaNode.pdomOrder = [backgroundRect, coordinateGuideNode.frontLayer, starsNode];
+    this.pdomControlAreaNode.pdomOrder = [
+      latitudeControl,
+      viewButton,
+      timeControl,
+      ...appearanceCheckboxes,
+      raSlider,
+      decSlider,
+      addStarCheckbox,
+      resetAllButton,
+    ];
   }
 
   public reset(): void {

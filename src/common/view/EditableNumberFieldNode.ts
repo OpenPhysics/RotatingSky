@@ -7,6 +7,7 @@
  */
 
 import type { ReadOnlyProperty } from "scenerystack/axon";
+import { toFixed } from "scenerystack/dot";
 import type { SceneryEvent } from "scenerystack/scenery";
 import { HBox, Node, Rectangle, Text } from "scenerystack/scenery";
 import { PhetFont } from "scenerystack/scenery-phet";
@@ -105,7 +106,7 @@ export class EditableNumberFieldNode extends HBox {
     if (this.editing) {
       return;
     }
-    this.editBuffer = value === null ? "" : value.toFixed(this.decimalPlaces);
+    this.editBuffer = value === null ? "" : toFixed(value, this.decimalPlaces);
     this.updateValueText();
   }
 

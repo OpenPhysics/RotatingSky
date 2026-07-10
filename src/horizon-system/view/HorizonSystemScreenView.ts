@@ -8,7 +8,7 @@
 
 import { DerivedProperty } from "scenerystack/axon";
 import { clamp, Vector2 } from "scenerystack/dot";
-import { DragListener, Node, Rectangle, Text, VBox } from "scenerystack/scenery";
+import { Rectangle, Text, VBox } from "scenerystack/scenery";
 import { NumberControl, PhetFont, ResetAllButton, TimeControlNode } from "scenerystack/scenery-phet";
 import type { ScreenViewOptions } from "scenerystack/sim";
 import { ScreenView } from "scenerystack/sim";
@@ -33,6 +33,7 @@ import {
   radToDeg,
 } from "../../common/SkyCoordinates.js";
 import { SkyProjection } from "../../common/SkyProjection.js";
+import { attachSkyCameraInteraction } from "../../common/view/attachSkyCameraInteraction.js";
 import { CelestialEquatorOnHorizonNode } from "../../common/view/CelestialEquatorOnHorizonNode.js";
 import { CelestialPoleAxisNode } from "../../common/view/CelestialPoleAxisNode.js";
 import { DeclinationRegionsNode } from "../../common/view/DeclinationRegionsNode.js";
@@ -57,11 +58,6 @@ import {
 } from "../../RotatingSkyConstants.js";
 import type { HorizonSystemModel } from "../model/HorizonSystemModel.js";
 import { HorizonSystemScreenSummaryContent } from "./HorizonSystemScreenSummaryContent.js";
-
-// Drag sensitivity (radians of camera rotation per pixel of pointer movement).
-const ROTATE_SPEED = 0.01;
-/** Sidereal hours advanced per pixel of Ctrl-drag ("rotate about NCP" mode). */
-const TIME_DRAG_RATE = 0.02;
 
 /** Approximate height of the star coordinate readout below the dome. */
 const STAR_READOUT_HEIGHT = 36;
@@ -98,6 +94,7 @@ export class HorizonSystemScreenView extends ScreenView {
 
     const sky = model.sky;
     const controls = StringManager.getInstance().getControls();
+    const keyboardHelp = StringManager.getInstance().getKeyboardHelpStrings();
 
     const backgroundRect = new Rectangle(0, 0, this.layoutBounds.width, this.layoutBounds.height, {
       fill: RotatingSkyColors.backgroundColorProperty,
@@ -285,6 +282,7 @@ export class HorizonSystemScreenView extends ScreenView {
         this.projection.viewMatrixProperty,
       ],
       accessibleName: controls.starStringProperty,
+      accessibleHelpText: keyboardHelp.starHelpStringProperty,
     });
 
     this.addChild(declinationRegions);
@@ -304,43 +302,12 @@ export class HorizonSystemScreenView extends ScreenView {
     positionReadoutBelowRightOfProjection(starReadout, this.projection);
     this.addChild(starReadout);
 
-    // Drag the empty background to rotate the camera. Alt-drag spins about the
-    // vertical axis only ("rotate about zenith"); Ctrl-drag advances sidereal
-    // time ("rotate about NCP").
-    let lastPoint: Vector2 | null = null;
-    let dragMode: "simple" | "zenith" | "ncp" = "simple";
-    backgroundRect.addInputListener(
-      new DragListener({
-        start: (event) => {
-          const domEvent = event.domEvent as { altKey?: boolean; ctrlKey?: boolean; metaKey?: boolean } | null;
-          lastPoint = event.pointer.point.copy();
-          dragMode = domEvent?.altKey ? "zenith" : domEvent?.ctrlKey || domEvent?.metaKey ? "ncp" : "simple";
-        },
-        drag: (event) => {
-          if (!lastPoint) {
-            return;
-          }
-          const p = event.pointer.point;
-          const dx = p.x - lastPoint.x;
-          const dy = lastPoint.y - p.y;
-          switch (dragMode) {
-            case "zenith":
-              this.projection.rotateAboutZenith(dx * ROTATE_SPEED);
-              break;
-            case "ncp":
-              sky.advanceSiderealTime(-dx * TIME_DRAG_RATE);
-              break;
-            default:
-              this.projection.rotateBy(dx * ROTATE_SPEED, dy * ROTATE_SPEED);
-              break;
-          }
-          lastPoint = p.copy();
-        },
-        end: () => {
-          lastPoint = null;
-        },
-      }),
-    );
+    attachSkyCameraInteraction(backgroundRect, {
+      projection: this.projection,
+      sky,
+      accessibleNameProperty: keyboardHelp.skyViewStringProperty,
+      accessibleHelpTextProperty: keyboardHelp.skyViewHelpStringProperty,
+    });
 
     this.addChild(panel);
 
@@ -356,28 +323,23 @@ export class HorizonSystemScreenView extends ScreenView {
     });
     this.addChild(resetAllButton);
 
-    this.addChild(
-      new Node({
-        pdomOrder: [
-          latitudeControl,
-          addStarButton,
-          timeControl,
-          resetTrailsButton,
-          trailsCheckbox,
-          removeAllButton,
-          riseSetCheckbox,
-          circumpolarCheckbox,
-          neverRiseCheckbox,
-          hideBelowHorizonCheckbox,
-          labelsCheckbox,
-          meridianCheckbox,
-          celestialReferencesCheckbox,
-          starsNode,
-          starReadout,
-          resetAllButton,
-        ],
-      }),
-    );
+    this.pdomPlayAreaNode.pdomOrder = [backgroundRect, starsNode, starReadout];
+    this.pdomControlAreaNode.pdomOrder = [
+      latitudeControl,
+      addStarButton,
+      timeControl,
+      resetTrailsButton,
+      trailsCheckbox,
+      removeAllButton,
+      riseSetCheckbox,
+      circumpolarCheckbox,
+      neverRiseCheckbox,
+      hideBelowHorizonCheckbox,
+      labelsCheckbox,
+      meridianCheckbox,
+      celestialReferencesCheckbox,
+      resetAllButton,
+    ];
   }
 
   public reset(): void {

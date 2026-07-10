@@ -20,6 +20,7 @@ import {
   LOCATION_STEP_DEGREES,
   LONGITUDE_RANGE,
 } from "../../RotatingSkyConstants.js";
+import RotatingSkyHotkeyData from "../RotatingSkyHotkeyData.js";
 import { type EarthShorePoint, getEarthShorePolygons } from "./EarthShoreData.js";
 
 export type FlatEarthMapNodeOptions = { width: number; height: number };
@@ -256,7 +257,7 @@ export class FlatEarthMapNode extends Node {
 
     this.addInputListener(
       new KeyboardListener({
-        keys: ["arrowLeft", "arrowRight", "arrowUp", "arrowDown"],
+        keys: [...RotatingSkyHotkeyData.ARROW_KEYS],
         fireOnHold: true,
         fire: (_event, keysPressed) => {
           if (keysPressed === "arrowLeft") {

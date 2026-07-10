@@ -17,6 +17,7 @@ import { clamp, Vector3 } from "scenerystack/dot";
 import { DragListener, KeyboardListener, Node, Path } from "scenerystack/scenery";
 import RotatingSkyColors from "../../RotatingSkyColors.js";
 import { STAR_RADIUS } from "../../RotatingSkyConstants.js";
+import RotatingSkyHotkeyData from "../RotatingSkyHotkeyData.js";
 import { normalizeHours, raDecToVector3, radiansToHours, radToDeg } from "../SkyCoordinates.js";
 import type { SkyProjection } from "../SkyProjection.js";
 import { projectSplitPolyline, smallCirclePoints } from "./skyGraphics.js";
@@ -99,7 +100,7 @@ export class CoordinateGuideNode extends Node {
     // Keyboard: arrow keys nudge RA/Dec directly (the star's natural coordinates).
     starDot.addInputListener(
       new KeyboardListener({
-        keys: ["arrowLeft", "arrowRight", "arrowUp", "arrowDown"],
+        keys: [...RotatingSkyHotkeyData.ARROW_KEYS],
         fireOnHold: true,
         fire: (_event, keysPressed) => {
           switch (keysPressed) {

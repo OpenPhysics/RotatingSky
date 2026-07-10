@@ -12,7 +12,7 @@
  */
 
 import { Multilink, type UnknownMultilink } from "scenerystack/axon";
-import type { Vector3 } from "scenerystack/dot";
+import { toFixed, type Vector3 } from "scenerystack/dot";
 import { Node, Path, Text } from "scenerystack/scenery";
 import { PhetFont } from "scenerystack/scenery-phet";
 import RotatingSkyColors from "../../RotatingSkyColors.js";
@@ -119,8 +119,8 @@ export class SelectedStarCelestialArcsNode extends Node {
       decFront.shape = decSplit.front;
       decBack.shape = decSplit.back;
 
-      raLabel.string = `${ra.toFixed(1)}ʰ`;
-      decLabel.string = dec >= 0 ? `+${dec.toFixed(0)}°` : `${dec.toFixed(0)}°`;
+      raLabel.string = `${toFixed(ra, 1)}ʰ`;
+      decLabel.string = dec >= 0 ? `+${toFixed(dec, 0)}°` : `${toFixed(dec, 0)}°`;
 
       placeLabelOutside(raLabel, raDecToVector3(ra / 2, 0), projection);
       placeLabelOutside(decLabel, raDecToVector3(ra, dec / 2), projection);
