@@ -99,8 +99,7 @@ function parseArgs(argv: string[]): Options {
       case "--help":
       case "-h":
         printHelp();
-        process.exit(0);
-        break;
+        return process.exit(0);
       case "--all":
         opts.all = true;
         break;
