@@ -38,6 +38,9 @@ Thumbs.db
 # Claude Code - local settings excluded, hooks tracked
 .claude/settings.local.json
 
+# AI session transcripts (accidental commits)
+session-*.md
+
 # Local-only reference material (original NAAP Rotating Sky lab) — not part of the sim
 NAAP/
 
