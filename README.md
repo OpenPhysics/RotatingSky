@@ -2,7 +2,7 @@
 
 An interactive astronomy simulation about how the sky appears to rotate for an
 observer on Earth, built with [SceneryStack](https://scenerystack.org/),
-Vite 8, TypeScript 6, and Biome 2.
+Vite 8, TypeScript 7, and Biome 2.
 
 ## Features
 
@@ -51,7 +51,7 @@ New sims start at `version: "0.0.0"` in `package.json`. Bump only when cutting a
 |---|---|---|
 | [SceneryStack](https://scenerystack.org/) | ^3.0.0 | Simulation framework |
 | [Vite](https://vitejs.dev/) | ^8 | Build tool + dev server |
-| [TypeScript](https://www.typescriptlang.org/) | ^6 | Type-safe JavaScript |
+| [TypeScript](https://www.typescriptlang.org/) | ^7 | Type-safe JavaScript |
 | [Biome](https://biomejs.dev/) | ^2.5 | Linting + formatting |
 | [vite-plugin-pwa](https://vite-pwa-org.netlify.app/) | ^1 | PWA + service worker |
 
