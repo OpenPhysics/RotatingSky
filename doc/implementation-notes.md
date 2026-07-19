@@ -1,79 +1,101 @@
 # Implementation Notes - Rotating Sky
 
-## Architecture overview
+Developer-facing notes on the architecture. Educator-facing physics are in [model.md](./model.md).
 
-Three independent screens. Each screen model **composes** its own `SkyModel` (same pattern as
-`TimeModel`), seeded from shared preference defaults for latitude/longitude. Screens do not share live
-sky state.
+## Architecture Overview
+
+Three independent screens, each composing its own `SkyModel` seeded from `RotatingSkyPreferencesModel`
+(latitude, longitude, earth map resolution).
 
 ```
-main.ts
-  ├─ HorizonSystemScreen     → HorizonSystemModel  { sky: SkyModel }
-  ├─ CelestialSphereScreen   → CelestialSphereModel { sky: SkyModel }
-  └─ ExplorerScreen          → ExplorerModel        { sky: SkyModel }
+src/main.ts
+  RotatingSkyPreferencesModel ← rotatingSkyQueryParameters (?latitude, ?longitude, ?earthMapResolution)
+  ├─ HorizonSystemScreen   → HorizonSystemModel   { sky: SkyModel, viewMode, viewDirection }
+  ├─ CelestialSphereScreen → CelestialSphereModel { sky: SkyModel, systemBlend, guide star, prompts }
+  └─ ExplorerScreen        → ExplorerModel        { sky: SkyModel }
 
 src/common/
-  ├─ model/SkyModel.ts, Star.ts, StarPatterns.ts
-  ├─ SkyCoordinates.ts       pure RA/Dec ↔ alt/az, declination bands
-  ├─ SkyProjection.ts        camera / view matrix; has dispose()
-  ├─ TimeModel.ts            play/pause
-  ├─ RotatingSkyPanel.ts, button/control option helpers, screen icons
-  ├─ skyMorph.ts
-  └─ view/                   heavy shared graphics (dome, sphere, stars, trails,
-                             Earth map/globe, arcs, readouts, …)
+  model/SkyModel.ts, Star.ts, StarPatterns.ts, ViewDirection.ts
+  SkyCoordinates.ts          pure transforms + declinationBand (unit-tested)
+  SkyProjection.ts           orthographic projector; dispose()
+  skyMorph.ts                equatorial↔horizon frameMatrixForBlend
+  TimeModel.ts               play/pause + elapsed seconds
+  view/HorizonDomeNode.ts, CelestialSphereNode.ts, SkyStarsNode.ts, SkyTrailsNode.ts
+  view/DeclinationRegionsNode.ts, EarthGlobeNode.ts, FlatEarthMapNode.ts, …
+  model/EarthShoreDataLow.ts, EarthShoreDataHigh.ts, EarthShoreData.ts
 
-src/preferences/
-  ├─ RotatingSkyPreferencesModel   defaultLatitude / defaultLongitude / earthMapResolution
-  ├─ RotatingSkyPreferencesNode
-  └─ rotatingSkyQueryParameters    seeds preference defaults
+src/<screen>/model/          thin wrappers composing SkyModel
+src/preferences/             RotatingSkyPreferencesModel, Node, query params
 ```
 
-Educator-facing math: [model.md](./model.md).
+Unlike the other two NAAP ports in this repo (BasicCoordinates, MotionsOfTheSun), RotatingSky owns the
+canonical `SkyModel` / star-placement pattern that those sims partially reuse.
 
-## Model components
+Data flows Model → View through AXON `Property` objects. Views never compute astronomy; `SkyCoordinates`
+has zero SceneryStack imports.
 
-### SkyModel (`common/model/`)
+## SkyModel — shared per-screen astronomy state
 
-Per-screen astronomy state: observer lat/long (reset restores preference defaults), LST, stars /
-pattern groups, selection, trail bookkeeping, and screen-specific visibility toggles. Composes
-`TimeModel`; `step(dt)` advances sidereal time from speed / animation-rate / duration settings.
-`Star` instances are disposed when removed from the sky.
+| Category | Properties / behavior |
+|---|---|
+| **Time** | Composes `TimeModel`; `timeSpeedProperty` (TimeSpeed enum); `animationRateProperty` (Explorer slider only); `animationDurationProperty`; `siderealTimeProperty`; `step(dt)` advances LST when playing |
+| **Location** | `latitudeProperty`, `longitudeProperty` (longitude used in Explorer views, not in `SkyCoordinates` itself) |
+| **Stars** | `stars` ObservableArray; `selectedStarProperty`; `addStar` / `addRandomStar` / `addPattern`; cap `MAX_STARS = 30`; `removeStar` disposes `Star` |
+| **Patterns** | `starPatternGroups` — stars + edges from inline `StarPatterns.ts` data (7 asterisms) |
+| **Trails** | `trailStartTimeProperty`, `resetStarTrails()`; visibility via `starTrailsVisibleProperty` or `starTrailModeProperty` |
+| **Toggles** | ~20 BooleanProperties partitioned by screen in source |
 
-### Thin screen models
+Speed: `(SLOW|NORMAL|FAST multiplier) × animationRateProperty × SIDEREAL_HOURS_PER_SECOND × dt`.
 
-`HorizonSystemModel`, `CelestialSphereModel`, and `ExplorerModel` each construct a `SkyModel(options)`
-with `defaultLatitudeProperty` / `defaultLongitudeProperty` from preferences and forward `step` /
-`reset`.
+Duration limit (Explorer): tracks elapsed sidereal hours since play start; auto-pauses at selected limit.
 
-### SkyCoordinates
+## Screen-only models
 
-UI-free transforms and `declinationBand`; covered by unit tests.
+| Model | Extra state |
+|---|---|
+| `HorizonSystemModel` | `viewModeProperty` (DIAGRAM/SKY/BOTH), `viewDirectionProperty` (N/E/S/W) |
+| `CelestialSphereModel` | `systemBlendProperty` 0–1, `isMorphingProperty`, `guidedPromptIndexProperty` (4 prompts), `guideRaProperty` / `guideDecProperty` / `guideStarVisibleProperty`; forces `labelsVisibleProperty = true` on construct/reset |
+| `ExplorerModel` | Thin wrapper only |
 
-## View components
+## View ↔ model wiring highlights
 
-`common/view/` is large: horizon dome/plane/ground, celestial sphere, star dots/trails/patterns,
-coordinate guides, selected-star arcs, Earth map/globe, readouts, editable fields. Screen views
-compose these nodes and bind to their local `model.sky`.
+- **`SkyProjection`**: camera azimuth/elevation + optional `frameMatrixProperty` (Celestial Sphere morph).
+- **`SkyStarsNode`**: caller supplies `starToPoint` + optional `pointToEquatorial` (enables drag).
+- **`SkyTrailsNode`**: samples LST from `trailStartTime`; Explorer passes longitude-adjusted local LST.
+- **`DeclinationRegionsNode`**: `projectDeclinationBand` with frame-specific `toVector` — used on Horizon +
+  Explorer (**not** a separate `SkyBandsNode`).
+- **`attachSkyCameraInteraction`**: Ctrl-drag advances LST; Shift-click add star **only when `onAddStarAt`
+  provided (Explorer)**.
+- **Explorer `localSiderealTimeProperty`**: `DerivedProperty([siderealTime, longitude], …)` — critical for
+  longitude wiring.
 
-`SkyProjection` owns azimuth/elevation/frame matrices and exposes `dispose()` for its Properties.
-**Most view nodes are screen-lifetime** — they live as long as the screen and are not disposed on
-every interaction. Dispose paths that do exist are for dynamic pieces (e.g. per-star links when stars
-are removed, selected-star arc/readout links when selection changes).
+## Key design decisions
 
-## Preferences
+- **Independent `SkyModel` per screen** — NAAP lab pattern; preferences seed Reset All only (not live sync).
+- **Guide star vs `SkyModel.stars`** on Celestial Sphere — teaching coordinates without cluttering star list.
+- **Inline `StarPatterns.ts`** — no external JSON; Explorer-only UI.
+- **Earth map resolution** default **`high`** (Natural Earth); `?earthMapResolution=low|high`.
 
-Unlike the other two NAAP ports here, preferences are live: default latitude/longitude (and Earth map
-resolution) come from query parameters into `RotatingSkyPreferencesModel`. Each `SkyModel` seeds and,
-on Reset All, restores location from those Properties.
+## Common components
 
-## TimeModel
+- `RotatingSkyPanel`, `RotatingSkyButtonOptions`, `RotatingSkyControlOptions`, `RotatingSkyHotkeyData`.
 
-Shared play/pause + elapsed-time helper; composed inside `SkyModel` (and disposable if ever torn down).
+## Disposal
 
-## Tests
+Screen-lifetime models. `TimeModel.dispose()` exists; `SkyModel` does not dispose it. Dynamic star
+removal calls `Star.dispose()`.
 
-`tests/`: `SkyCoordinates`, `SkyModel`, `TimeModel`, plus `skyGraphics` view helpers.
+## Testing
+
+| File | Covers |
+|---|---|
+| `SkyCoordinates.test.ts` | NCP altitude = φ, transits, round-trips, declination bands |
+| `SkyModel.test.ts` | stars, cap, time stepping, duration auto-pause, reset |
+| `TimeModel.test.ts` | play/pause elapsed time |
+| `ViewDirection.test.ts` | cardinal azimuth helpers |
+| `skyGraphics.test.ts` | projection graphics helpers |
+| `memory-leak.test.ts` | fleet dispose pattern |
 
 ## Multi-screen
 
-Independent sky state per screen, shared preference defaults only — see [multi-screen.md](./multi-screen.md).
+Independent-state pattern — see [multi-screen.md](./multi-screen.md).

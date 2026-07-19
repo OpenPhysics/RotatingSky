@@ -4,79 +4,50 @@ Sim-specific context for AI assistants. General SceneryStack guidance: [OpenPhys
 
 ## Project
 
-An interactive astronomy simulation about the apparent rotation of the sky for an
-observer on Earth. Extended to three screens (see `doc/multi-screen.md`):
+SceneryStack port of the NAAP **Rotating Sky** lab. Three screens build the same celestial geometry from different viewpoints — local horizon dome, equatorial celestial sphere, and a combined explorer. Architecture and formulas: [doc/model.md](doc/model.md), [doc/implementation-notes.md](doc/implementation-notes.md).
 
-- **Horizon System** (`src/horizon-system/`) — the local sky from an observer's horizon.
-- **Celestial Sphere** (`src/celestial-sphere/`) — the celestial sphere, equator, ecliptic, poles.
-- **Explorer** (`src/explorer/`) — the combined, interactive rotating-sky explorer.
+- **Horizon System** (`src/horizon-system/`) — altitude/azimuth, zenith, meridian, optional declination-band shading and star trails.
+- **Celestial Sphere** (`src/celestial-sphere/`) — RA/Dec, hour circles, ecliptic; animated morph between equatorial and horizon frames; guided "Explore" prompts.
+- **Explorer** (`src/explorer/`) — latitude + longitude, dual views, star patterns, richer trail modes, animation duration limits.
 
-Status: the astronomy model is implemented.
-Reference material for the port lives in the gitignored `NAAP/` directory
-(the original NAAP "Rotating Sky" Flash/AIR lab). The automated gate is
-`npm run check && npm run lint && npm run build` (plus `npm test`).
+Unlike sibling NAAP ports (`BasicCoordinatesAndSeasons`, `MotionsOfTheSun`), RotatingSky owns the canonical `SkyModel` / star-placement pattern those sims partially reuse.
 
 ## Key files
 
-| File | Purpose |
+| Area | Location |
 |---|---|
-| `src/RotatingSkyColors.ts` | All `ProfileColorProperty` instances (shared) |
-| `src/RotatingSkyConstants.ts` | Named constants (layout px, angle ranges, animation rates, star limits) |
-| `src/RotatingSkyNamespace.ts` | Namespace for color property names |
-| `src/i18n/StringManager.ts` | Singleton localized string accessor; per-screen name + a11y getters, plus `getControls()` |
-| `src/common/RotatingSkyPanel.ts` | Pre-themed `Panel` wrapper (uses `RotatingSkyColors`) |
-| `src/common/RotatingSkyButtonOptions.ts` | Shared flat-styled button option presets |
-| `src/common/RotatingSkyScreenIcons.ts` | Programmatic home/nav-bar icons for the three screens |
-| `src/common/TimeModel.ts` | Composable play/pause + elapsed-time model for animated sims |
-| `src/preferences/…` | `rotatingSkyQueryParameters.ts` + `RotatingSkyPreferences{Model,Node}.ts` (default latitude/longitude) |
-| `src/<screen>/…Screen.ts` | Per-screen `Screen<Model, View>` wrapper |
-| `src/<screen>/model/…Model.ts` | Per-screen model; composes a `SkyModel` (+ any screen-only state) |
-| `src/<screen>/view/…ScreenView.ts` | Per-screen visual nodes, layout, `screenSummaryContent` + `pdomOrder` |
-| `src/<screen>/view/…ScreenSummaryContent.ts` | Per-screen accessible summary |
-| `src/<screen>/view/…KeyboardHelpContent.ts` | Per-screen keyboard-help dialog content |
-| `scripts/generate-icons.ts` | PNG app icons from `public/icons/icon.svg` |
-| `scripts/decompile-flash.ts` | Extract ActionScript from the NAAP Flash `.swf` sources via JPEXS FFDec (→ `NAAP/decompiled/`) |
+| Screens | `src/horizon-system/HorizonSystemScreen.ts`, `src/celestial-sphere/CelestialSphereScreen.ts`, `src/explorer/ExplorerScreen.ts` |
+| Shared astronomy | `src/common/model/SkyModel.ts`, `Star.ts`, `StarPatterns.ts`, `ViewDirection.ts`, `SkyCoordinates.ts`, `SkyProjection.ts`, `skyMorph.ts` |
+| Shared views | `src/common/view/HorizonDomeNode.ts`, `CelestialSphereNode.ts`, `SkyStarsNode.ts`, `SkyTrailsNode.ts`, `DeclinationRegionsNode.ts`, `skyGraphics.ts`, `attachSkyCameraInteraction.ts` |
+| Per-screen models | `horizon-system/model/HorizonSystemModel.ts`, `celestial-sphere/model/CelestialSphereModel.ts`, `explorer/model/ExplorerModel.ts` |
+| Animation | `src/common/TimeModel.ts` (composed into each `SkyModel`) |
+| Colors / constants | `src/RotatingSkyColors.ts`, `src/RotatingSkyConstants.ts` |
+| Strings | `src/i18n/StringManager.ts` |
+| Preferences / query params | `src/preferences/` (`?latitude`, `?longitude`, `?earthMapResolution=`) |
+| Entry | `src/main.ts` |
 
-`<screen>` is one of `horizon-system`, `celestial-sphere`, `explorer`, with class
-prefixes `HorizonSystem`, `CelestialSphere`, `Explorer`.
+## Model
 
-## Sky engine (`src/common/`)
+Three **independent** screen models — each constructs its own `SkyModel` seeded from shared preference defaults. Changing latitude, time, or stars on one screen does **not** affect the others.
 
-The shared astronomy lives in a handful of frame-agnostic modules. A view node
-draws into a `SkyProjection`; pointing it at a different frame (a different
-`toVector`/axis) renders the same geometry on either sphere.
+| Screen | Model | Notes |
+|---|---|---|
+| **Horizon System** | `HorizonSystemModel` | Composes `SkyModel`; `viewModeProperty` (diagram/sky/both), `viewDirectionProperty` (N/E/S/W cardinal view); star trails on/off (default **on**); longitude does not affect astronomy |
+| **Celestial Sphere** | `CelestialSphereModel` | Composes `SkyModel`; `systemBlendProperty` morphs equatorial↔horizon frame; separate **guide star** (sliders) vs user stars; four guided prompts; forces labels visible on construct/reset |
+| **Explorer** | `ExplorerModel` | Thin wrapper around `SkyModel`; **longitude shifts local sidereal time** `LST + (λ/360)×24 h`; star patterns, shift-click add, trail modes (none / 3 h / 24 h), animation duration auto-pause |
 
-| File | Purpose |
-|---|---|
-| `model/SkyModel.ts` | Shared state: observer lat/long, sidereal time, the star list + selection, trail bookkeeping, display toggles. Each per-screen model owns one. |
-| `model/Star.ts` | One star, fixed by equatorial (RA, Dec); alt/az derived per screen. |
-| `model/StarPatterns.ts` | Preset asterisms (Big Dipper, Orion's Belt, …) for the picker. |
-| `SkyCoordinates.ts` | Pure spherical-astronomy helpers (RA/Dec ↔ alt/az, the two frames, declination classification). No scenery/model deps → unit-tested. |
-| `SkyProjection.ts` | Orthographic 3-D → 2-D projector; owns the camera (azimuth/elevation, drag-to-rotate). `projectWithDepth()` drives front/back occlusion (solid vs. dashed). |
-| `view/skyGraphics.ts` | Projects sampled circles/polylines/bands to kite `Shape`s. `projectDeclinationBand` takes a `toVector` frame mapping, so one routine fills a band in **either** frame. |
-| `skyMorph.ts` | Frame rotation that morphs the Celestial Sphere view between equatorial and horizon orientation (twixt-animated `systemBlendProperty`). |
+**Shared gotchas**
 
-Two world frames (`SkyCoordinates.ts`): the **equatorial** frame (+Z = NCP) for the
-celestial sphere, and the **horizon** frame (+Z = zenith, +X = N, +Y = E) for the
-horizon dome. The Explorer draws both views from one `SkyModel`; the Celestial
-Sphere screen morphs a single view between the two.
-
-`DeclinationRegionsNode` shades the circumpolar / rise-and-set / never-rise regions;
-with the default equatorial `toVector` it draws them on the celestial sphere, and
-with a horizon-frame `toVector` (the Explorer passes one) it mirrors them onto the
-horizon dome, where the caps tilt with latitude and the never-rise cap drops below
-the horizon. (`SkyBandsNode` is the simpler single-cap shading on the Horizon System
-screen, toggled by `bandsVisibleProperty`.)
+- Diurnal motion: hour angle **H = LST − RA** (wrapped to [−12, +12) h); at **NORMAL** speed the sky completes one rotation in **24 s** (1 sidereal h/s).
+- Two frames in `SkyCoordinates.ts`: **equatorial** (+Z = NCP) and **horizon** (+Z = zenith, +X = N, +Y = E). Azimuth is from North through East.
+- `DeclinationRegionsNode` uses frame-specific `toVector` — shades circumpolar / rise-set / never-rise caps on both dome and sphere.
+- `attachSkyCameraInteraction`: Ctrl-drag advances LST; Shift-click add star only when `onAddStarAt` is provided (**Explorer only**).
+- Default earth map resolution is **`high`** (Natural Earth).
 
 ## Accessibility
 
 Follows the shared [OpenPhysics accessibility convention](https://github.com/OpenPhysics/Baton/blob/main/ACCESSIBILITY.md).
-Each screen registers its own `ScreenSummaryContent` and an explicit `pdomOrder`.
-A11y strings live under per-screen keys in the `a11y` block of each locale JSON
-(`a11y.horizonSystem`, `a11y.celestialSphere`, `a11y.explorer`), exposed via
-`StringManager.get<Screen>A11yStrings()`. Each summary's `currentDetailsContent` is
-already a live `PatternStringProperty`/`DerivedProperty` over the model, and
-interactive nodes carry `accessibleName`s — keep both in sync as you add state.
+Each screen registers `*ScreenSummaryContent` and `*KeyboardHelpContent`, with explicit `pdomOrder`. A11y strings live under `a11y.horizonSystem`, `a11y.celestialSphere`, and `a11y.explorer` in each locale JSON, via `StringManager.getHorizonSystemA11yStrings()` / `getCelestialSphereA11yStrings()` / `getExplorerA11yStrings()`. Keep `currentDetailsContent` live; every interactive node needs an `accessibleName`.
 
 ## Testing
 
@@ -84,58 +55,31 @@ Fleet-standard Vitest layout:
 
 | Path | Purpose |
 |---|---|
-| `vitest.config.ts` | Test environment + `setupFiles` when present; `execArgv: ["--expose-gc"]` with memory-leak suite |
-| `tests/setup.ts` | Canvas / AudioContext mocks + `init({ name: "…" })` before SceneryStack imports (when required) |
-| `tests/**/*.test.ts` | Model/physics unit tests — mirror `src/` under `tests/` |
+| `vitest.config.ts` | Test environment + `setupFiles`; `execArgv: ["--expose-gc"]` with memory-leak suite |
+| `tests/setup.ts` | Canvas / AudioContext mocks + `init({ name: "…" })` before SceneryStack imports |
+| `tests/**/*.test.ts` | Model/physics unit tests |
 | `tests/memory-leak.test.ts` | WeakRef + `forceGC` dispose regression (fleet pattern) |
+
+| File | Covers |
+|---|---|
+| `SkyCoordinates.test.ts` | NCP altitude = φ, transits, round-trips, declination bands |
+| `SkyModel.test.ts` | Stars, cap, time stepping, duration auto-pause, reset |
+| `ViewDirection.test.ts` | Cardinal azimuth helpers |
+| `skyGraphics.test.ts` | Projection graphics helpers |
+| `TimeModel.test.ts` | Play/pause elapsed time |
+| `memory-leak.test.ts` | Dispose regression |
 
 - Put unit tests only under root `tests/` (never co-locate or use `__tests__/`).
 - Run `npm test`. CI runs the suite when a `test` script is present.
-- Expand `memory-leak.test.ts` for components that add/remove nodes or link Properties at runtime (see OpticsLab).
 
-## Sharing state across screens
+## Commands
 
-The three screens are independent: each per-screen model constructs its own
-`SkyModel` (seeded from the shared preference defaults in `main.ts`), so latitude,
-time, and stars set on one screen do not carry to the others. To make a piece of
-state global instead, construct one `SkyModel` (or a narrower root model) once and
-thread that same instance through each per-screen model constructor — see the
-"Multi-screen with shared model" pattern in `doc/multi-screen.md`.
-
-## PWA
-
-After `npm run build`, the sim is installable offline via Workbox (`dist/manifest.webmanifest`).
-
-## Decompiling the Flash sources
-
-`npm run decompile` (script: `scripts/decompile-flash.ts`) extracts readable ActionScript
-from the NAAP Flash movies so the ported astronomy can be diffed against the originals.
-The `.fla` files are old binary (OLE compound) projects no tool reads directly, so the
-script decompiles their sibling compiled `.swf` (passing a `.fla` resolves to its `.swf`
-automatically) via **JPEXS FFDec**.
-
-```sh
-npm run decompile                 # the main explorer (celHorComp039-D) → NAAP/decompiled/<name>/scripts/*.as
-npm run decompile -- --all        # all Rotating-Sky-relevant movies (curated list below)
-npm run decompile -- --list       # dry run: print what would be decompiled, run nothing
-npm run decompile -- <path>…      # specific .swf / .fla / folder
-npm run decompile -- --assets     # also export images/shapes/sounds/text
-npm run decompile -- --xfl        # reconstruct an editable XFL project (closest to the .fla)
+```bash
+npm run lint && npm run check && npm run build && npm test
 ```
 
-Output goes to `NAAP/decompiled/` (git-ignored). **One-time setup** — FFDec needs a Java
-runtime:
+## Development notes
 
-```sh
-sudo apt install default-jre               # Debian/WSL (or: brew install temurin on macOS)
-npm run decompile -- --setup               # downloads FFDec into tools/ffdec/ (git-ignored)
-# …or point at an existing install instead: export FFDEC_JAR=/path/to/ffdec.jar
-```
-
-Run `npm run decompile -- --help` for all flags. The decompiled AS is a **read-only
-reference** (AS2, lightly mangled by the compiler) — transcribe the maths into typed TS in
-`src/`; don't vendor it. The curated `--all` set covers the main explorer
-(`celHorComp039-D`), the view components it composes (`flatSkyView`, `skyMap`,
-`celestial_sphere`, `simpleFlatSkyMap`), and supporting concept demos
-(`declination_ranges`, `siderealTimeAndHourAngleDemo`, `eduSkyMotion`,
-`celestialHorizon`, `diurnalMotion`, `zodiacSimulator`).
+- **`npm run decompile`** extracts NAAP Flash ActionScript via JPEXS FFDec into gitignored `NAAP/decompiled/` — read-only reference.
+- To share state across screens instead, construct one `SkyModel` once and thread it through each per-screen model — see [doc/multi-screen.md](doc/multi-screen.md).
+- After `npm run build`, the sim is installable offline via Workbox (`dist/manifest.webmanifest`).
