@@ -47,3 +47,6 @@ NAAP/
 # Flash decompilation tooling (npm run decompile) — downloaded FFDec
 tools/ffdec/
 .pw-shots/
+
+# CI / local npm audit artifact (must not be linted)
+audit.json
