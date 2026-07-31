@@ -26,7 +26,10 @@ describe("greatCircleArcPoints", () => {
     expect(points).toHaveLength(5);
     expect(points[0]).toEqual(p1);
     // Endpoint matches p2 to floating-point precision (cos(π/2) is ~6e-17, not exactly 0).
-    const end = points[4]!;
+    const end = points[4];
+    if (!end) {
+      throw new Error("expected arc endpoint");
+    }
     expect(end.x).toBeCloseTo(p2.x, 12);
     expect(end.y).toBeCloseTo(p2.y, 12);
     expect(end.z).toBeCloseTo(p2.z, 12);
@@ -37,7 +40,10 @@ describe("greatCircleArcPoints", () => {
     }
 
     // The midpoint should be at 45°.
-    const mid = points[2]!;
+    const mid = points[2];
+    if (!mid) {
+      throw new Error("expected arc midpoint");
+    }
     expect(mid.x).toBeCloseTo(Math.cos(Math.PI / 4), 6);
     expect(mid.y).toBeCloseTo(Math.cos(Math.PI / 4), 6);
     expect(mid.z).toBeCloseTo(0, 6);
