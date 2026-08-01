@@ -119,6 +119,6 @@ at RA = LST, Dec = φ at full horizon blend.
 ## References
 
 - NAAP *Rotating Sky* lab: Horizon Coordinate System, Celestial Sphere, and related student-guide
-  materials under `NAAP/astroUNL/naap/`.
+  materials under `../Baseline/Astronomy/astroUNL/naap/`.
 - Original Flash simulators (horizon dome, celestial sphere, explorer-style location tools).
 - Standard spherical astronomy: hour angle, alt/az ↔ RA/Dec (any introductory textbook treatment).
