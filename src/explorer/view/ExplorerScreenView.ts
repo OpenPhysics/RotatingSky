@@ -23,8 +23,7 @@ import { NumberControl, PhetFont, ResetAllButton, TimeControlNode } from "scener
 import type { ScreenViewOptions } from "scenerystack/sim";
 import { ScreenView } from "scenerystack/sim";
 import { Checkbox, ComboBox, HSlider, RectangularPushButton, VerticalAquaRadioButtonGroup } from "scenerystack/sun";
-import { AnimationDuration } from "../../common/model/AnimationDuration.js";
-import type { SkyModel } from "../../common/model/SkyModel.js";
+import type { AnimationDuration, SkyModel, StarTrailMode } from "../../common/model/SkyModel.js";
 import {
   BIG_DIPPER,
   BIG_DIPPER_EDGES,
@@ -42,7 +41,6 @@ import {
   SUMMER_TRIANGLE,
   SUMMER_TRIANGLE_EDGES,
 } from "../../common/model/StarPatterns.js";
-import { StarTrailMode } from "../../common/model/StarTrailMode.js";
 import {
   FLAT_PLAY_PAUSE_STEP_BUTTON_OPTIONS,
   FLAT_RECTANGULAR_BUTTON_OPTIONS,
@@ -231,12 +229,9 @@ export class ExplorerScreenView extends ScreenView {
       azimuth: Math.PI / 2,
     });
 
-    const trailsVisibleProperty = new DerivedProperty(
-      [sky.starTrailModeProperty],
-      (mode) => mode !== StarTrailMode.NONE,
-    );
+    const trailsVisibleProperty = new DerivedProperty([sky.starTrailModeProperty], (mode) => mode !== "none");
     const trailMaxLengthProperty = new DerivedProperty([sky.starTrailModeProperty], (mode) =>
-      mode === StarTrailMode.SHORT ? SHORT_TRAIL_HOURS : LONG_TRAIL_HOURS,
+      mode === "short" ? SHORT_TRAIL_HOURS : LONG_TRAIL_HOURS,
     );
 
     const horTrails = new SkyTrailsNode(sky, this.horProjection, {
@@ -411,12 +406,12 @@ export class ExplorerScreenView extends ScreenView {
       duration: AnimationDuration;
       labelProperty: typeof controls.animationTimeContinuousStringProperty;
     }[] = [
-      { duration: AnimationDuration.CONTINUOUS, labelProperty: controls.animationTimeContinuousStringProperty },
-      { duration: AnimationDuration.ONE_HOUR, labelProperty: controls.animationTime1HourStringProperty },
-      { duration: AnimationDuration.THREE_HOURS, labelProperty: controls.animationTime3HoursStringProperty },
-      { duration: AnimationDuration.SIX_HOURS, labelProperty: controls.animationTime6HoursStringProperty },
-      { duration: AnimationDuration.TWELVE_HOURS, labelProperty: controls.animationTime12HoursStringProperty },
-      { duration: AnimationDuration.TWENTY_FOUR_HOURS, labelProperty: controls.animationTime24HoursStringProperty },
+      { duration: "continuous", labelProperty: controls.animationTimeContinuousStringProperty },
+      { duration: "1hour", labelProperty: controls.animationTime1HourStringProperty },
+      { duration: "3hours", labelProperty: controls.animationTime3HoursStringProperty },
+      { duration: "6hours", labelProperty: controls.animationTime6HoursStringProperty },
+      { duration: "12hours", labelProperty: controls.animationTime12HoursStringProperty },
+      { duration: "24hours", labelProperty: controls.animationTime24HoursStringProperty },
     ];
     const durationCombo = new ComboBox<AnimationDuration>(
       sky.animationDurationProperty,
@@ -573,17 +568,17 @@ export class ExplorerScreenView extends ScreenView {
       sky.starTrailModeProperty,
       [
         {
-          value: StarTrailMode.NONE,
+          value: "none",
           createNode: () => radioText(controls.noStarTrailsStringProperty),
           options: { accessibleName: controls.noStarTrailsStringProperty },
         },
         {
-          value: StarTrailMode.SHORT,
+          value: "short",
           createNode: () => radioText(controls.shortStarTrailsStringProperty),
           options: { accessibleName: controls.shortStarTrailsStringProperty },
         },
         {
-          value: StarTrailMode.LONG,
+          value: "long",
           createNode: () => radioText(controls.longStarTrailsStringProperty),
           options: { accessibleName: controls.longStarTrailsStringProperty },
         },
