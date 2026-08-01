@@ -80,6 +80,6 @@ npm run lint && npm run check && npm run build && npm test
 
 ## Development notes
 
-- **`npm run decompile`** extracts NAAP Flash ActionScript via JPEXS FFDec into gitignored `NAAP/decompiled/` — read-only reference.
+- **`npm run decompile`** extracts NAAP Flash ActionScript via JPEXS FFDec from `../Baseline/Astronomy/flash-animations` into gitignored `NAAP/decompiled/`.
 - To share state across screens instead, construct one `SkyModel` once and thread it through each per-screen model — see [doc/multi-screen.md](doc/multi-screen.md).
 - After `npm run build`, the sim is installable offline via Workbox (`dist/manifest.webmanifest`).

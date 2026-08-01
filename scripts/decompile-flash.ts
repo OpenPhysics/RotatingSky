@@ -2,7 +2,7 @@
  * decompile-flash.ts
  *
  * Extract readable ActionScript (and optionally assets) from the original NAAP
- * Flash sources under `NAAP/`, so the ported Rotating Sky sim can be checked
+ * Flash sources under `../Baseline/Astronomy/flash-animations/` (sibling Baseline repo), so the ported Rotating Sky sim can be checked
  * against the real implementation.
  *
  * The `.fla` files are old binary (OLE compound) projects that no current tool
@@ -35,7 +35,18 @@ import { inflateRawSync } from "node:zlib";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..");
-const flashRoot = join(repoRoot, "NAAP", "flash-animations", "flashdev2");
+const flashRoot = resolve(repoRoot, "..", "Baseline", "Astronomy", "flash-animations", "flashdev2");
+
+/** Fail fast when the Baseline sibling checkout (or fetch) is missing. */
+function ensureFlashRoot(): void {
+  if (!existsSync(flashRoot)) {
+    fail(
+      `NAAP Flash sources not found at:\n  ${flashRoot}\n` +
+        `Clone OpenPhysics/Baseline as a sibling of this sim, then:\n` +
+        `  (cd ../Baseline && ./scripts/fetch-baselines.sh --only Astronomy/flash-animations)`,
+    );
+  }
+}
 
 /**
  * Latest canonical SWFs whose ActionScript informs the port (used by --all).
@@ -437,6 +448,8 @@ async function main(): Promise<void> {
     await setupFfdec(opts.ffdecVersion);
     return;
   }
+
+  ensureFlashRoot();
 
   const movies = resolveTargets(opts);
   if (movies.length === 0) {

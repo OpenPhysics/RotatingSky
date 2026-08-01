@@ -41,7 +41,7 @@ Thumbs.db
 # AI session transcripts (accidental commits)
 session-*.md
 
-# Local-only reference material (original NAAP Rotating Sky lab) — not part of the sim
+# Local decompile output (and any accidental NAAP re-clones). Upstream sources: ../Baseline/Astronomy/
 NAAP/
 
 # Flash decompilation tooling (npm run decompile) — downloaded FFDec
