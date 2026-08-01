@@ -8,6 +8,7 @@
 
 import { NumberProperty } from "scenerystack/axon";
 import { beforeEach, describe, expect, it } from "vitest";
+import { AnimationDuration } from "../src/common/model/AnimationDuration.js";
 import { SkyModel } from "../src/common/model/SkyModel.js";
 import { MAX_STARS } from "../src/RotatingSkyConstants.js";
 
@@ -100,7 +101,7 @@ describe("SkyModel time", () => {
 
   it("auto-pauses after the selected animation duration elapses", () => {
     const model = makeModel();
-    model.animationDurationProperty.value = "3hours";
+    model.animationDurationProperty.value = AnimationDuration.THREE_HOURS;
     model.timer.isPlayingProperty.value = true;
     model.step(1);
     expect(model.siderealTimeProperty.value).toBeCloseTo(1);
@@ -115,7 +116,7 @@ describe("SkyModel time", () => {
 
   it("runs without a duration limit when set to continuous", () => {
     const model = makeModel();
-    model.animationDurationProperty.value = "continuous";
+    model.animationDurationProperty.value = AnimationDuration.CONTINUOUS;
     model.timer.isPlayingProperty.value = true;
     model.step(3);
     expect(model.siderealTimeProperty.value).toBeCloseTo(3);
@@ -125,7 +126,7 @@ describe("SkyModel time", () => {
   it("wraps duration accounting across midnight", () => {
     const model = makeModel();
     model.siderealTimeProperty.value = 23;
-    model.animationDurationProperty.value = "3hours";
+    model.animationDurationProperty.value = AnimationDuration.THREE_HOURS;
     model.timer.isPlayingProperty.value = true;
     model.step(3);
     expect(model.siderealTimeProperty.value).toBeCloseTo(2);

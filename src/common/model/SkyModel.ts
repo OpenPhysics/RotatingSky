@@ -35,32 +35,28 @@ import {
 } from "../../RotatingSkyConstants.js";
 import { HOURS_PER_DAY, normalizeDegrees, normalizeHours } from "../SkyCoordinates.js";
 import { TimeModel } from "../TimeModel.js";
+import { AnimationDuration } from "./AnimationDuration.js";
 import { Star } from "./Star.js";
 import type { StarPatternEdge, StarPatternStar } from "./StarPatterns.js";
-
-/** How much of each star's recent path to draw as a trail. */
-export type StarTrailMode = "none" | "short" | "long";
-
-/** How long a play segment runs before auto-pausing; `continuous` has no limit. */
-export type AnimationDuration = "continuous" | "1hour" | "3hours" | "6hours" | "12hours" | "24hours";
+import { StarTrailMode } from "./StarTrailMode.js";
 
 /** Combo-box choices for {@link AnimationDuration}, in display order. */
 export const ANIMATION_DURATION_OPTIONS: readonly AnimationDuration[] = [
-  "continuous",
-  "1hour",
-  "3hours",
-  "6hours",
-  "12hours",
-  "24hours",
+  AnimationDuration.CONTINUOUS,
+  AnimationDuration.ONE_HOUR,
+  AnimationDuration.THREE_HOURS,
+  AnimationDuration.SIX_HOURS,
+  AnimationDuration.TWELVE_HOURS,
+  AnimationDuration.TWENTY_FOUR_HOURS,
 ];
 
 const ANIMATION_DURATION_HOURS = new Map<AnimationDuration, number | null>([
-  ["continuous", null],
-  ["1hour", 1],
-  ["3hours", 3],
-  ["6hours", 6],
-  ["12hours", 12],
-  ["24hours", 24],
+  [AnimationDuration.CONTINUOUS, null],
+  [AnimationDuration.ONE_HOUR, 1],
+  [AnimationDuration.THREE_HOURS, 3],
+  [AnimationDuration.SIX_HOURS, 6],
+  [AnimationDuration.TWELVE_HOURS, 12],
+  [AnimationDuration.TWENTY_FOUR_HOURS, 24],
 ]);
 
 export type SkyModelOptions = {
@@ -94,7 +90,7 @@ export class SkyModel implements TModel {
   public readonly animationRateProperty = new NumberProperty(1, { range: ANIMATION_RATE_RANGE });
 
   /** Sidereal-hour span for each play segment; `continuous` runs until paused manually. */
-  public readonly animationDurationProperty = new Property<AnimationDuration>("continuous");
+  public readonly animationDurationProperty = new EnumerationProperty(AnimationDuration.CONTINUOUS);
 
   /** Observer latitude in degrees, +N / −S. */
   public readonly latitudeProperty: NumberProperty;
@@ -118,7 +114,7 @@ export class SkyModel implements TModel {
   public readonly starTrailsVisibleProperty = new BooleanProperty(true);
 
   /** Trail length on the Explorer screen: none, short, or a full revolution. */
-  public readonly starTrailModeProperty = new Property<StarTrailMode>("none");
+  public readonly starTrailModeProperty = new EnumerationProperty(StarTrailMode.NONE);
 
   /** Sidereal time at which the current trails began (reset collapses trails). */
   public readonly trailStartTimeProperty = new NumberProperty(0);
