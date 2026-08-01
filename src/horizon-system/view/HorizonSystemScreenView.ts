@@ -9,10 +9,10 @@
 
 import { DerivedProperty } from "scenerystack/axon";
 import { Bounds2, clamp, Vector2 } from "scenerystack/dot";
+import { type EmptySelfOptions, optionize } from "scenerystack/phet-core";
 import { Node, Rectangle, Text, VBox } from "scenerystack/scenery";
 import { NumberControl, PhetFont, ResetAllButton, TimeControlNode } from "scenerystack/scenery-phet";
-import type { ScreenViewOptions } from "scenerystack/sim";
-import { ScreenView } from "scenerystack/sim";
+import { ScreenView, type ScreenViewOptions } from "scenerystack/sim";
 import { Checkbox, RectangularPushButton, VerticalAquaRadioButtonGroup } from "scenerystack/sun";
 import { ViewDirection, viewDirectionDomeAzimuth } from "../../common/model/ViewDirection.js";
 import {
@@ -123,17 +123,22 @@ const projectionInBounds = (bounds: Bounds2): { center: Vector2; radius: number 
   };
 };
 
+export type HorizonSystemScreenViewOptions = ScreenViewOptions;
+
 export class HorizonSystemScreenView extends ScreenView {
   private readonly projection: SkyProjection;
   private readonly skyViewNode: FirstPersonSkyViewNode;
   private readonly diagramLayer: Node;
   private readonly model: HorizonSystemModel;
 
-  public constructor(model: HorizonSystemModel, options?: ScreenViewOptions) {
-    super({
-      screenSummaryContent: new HorizonSystemScreenSummaryContent(model),
-      ...options,
-    });
+  public constructor(model: HorizonSystemModel, providedOptions?: HorizonSystemScreenViewOptions) {
+    const options = optionize<HorizonSystemScreenViewOptions, EmptySelfOptions, ScreenViewOptions>()(
+      {
+        screenSummaryContent: new HorizonSystemScreenSummaryContent(model),
+      },
+      providedOptions,
+    );
+    super(options);
 
     this.model = model;
     const sky = model.sky;

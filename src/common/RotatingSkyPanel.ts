@@ -25,21 +25,26 @@
  *   const panel = new RotatingSkyPanel(content, { fill: "transparent" });
  */
 
+import { type EmptySelfOptions, optionize } from "scenerystack/phet-core";
 import type { Node } from "scenerystack/scenery";
-import type { PanelOptions } from "scenerystack/sun";
-import { Panel } from "scenerystack/sun";
+import { Panel, type PanelOptions } from "scenerystack/sun";
 import RotatingSkyColors from "../RotatingSkyColors.js";
 import { PANEL_CORNER_RADIUS, PANEL_X_MARGIN, PANEL_Y_MARGIN } from "../RotatingSkyConstants.js";
 
+export type RotatingSkyPanelOptions = PanelOptions;
+
 export class RotatingSkyPanel extends Panel {
-  public constructor(content: Node, providedOptions?: PanelOptions) {
-    super(content, {
-      fill: RotatingSkyColors.panelBackgroundColorProperty,
-      stroke: RotatingSkyColors.panelBorderColorProperty,
-      cornerRadius: PANEL_CORNER_RADIUS,
-      xMargin: PANEL_X_MARGIN,
-      yMargin: PANEL_Y_MARGIN,
-      ...providedOptions,
-    });
+  public constructor(content: Node, providedOptions?: RotatingSkyPanelOptions) {
+    const options = optionize<RotatingSkyPanelOptions, EmptySelfOptions, PanelOptions>()(
+      {
+        fill: RotatingSkyColors.panelBackgroundColorProperty,
+        stroke: RotatingSkyColors.panelBorderColorProperty,
+        cornerRadius: PANEL_CORNER_RADIUS,
+        xMargin: PANEL_X_MARGIN,
+        yMargin: PANEL_Y_MARGIN,
+      },
+      providedOptions,
+    );
+    super(content, options);
   }
 }

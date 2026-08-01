@@ -17,12 +17,14 @@
 
 import { DerivedProperty, Property, type TReadOnlyProperty } from "scenerystack/axon";
 import { clamp, Vector2 } from "scenerystack/dot";
+import { optionize } from "scenerystack/phet-core";
 import { HBox, Node, Rectangle, Text, VBox } from "scenerystack/scenery";
 import { NumberControl, PhetFont, ResetAllButton, TimeControlNode } from "scenerystack/scenery-phet";
 import type { ScreenViewOptions } from "scenerystack/sim";
 import { ScreenView } from "scenerystack/sim";
 import { Checkbox, ComboBox, HSlider, RectangularPushButton, VerticalAquaRadioButtonGroup } from "scenerystack/sun";
-import type { AnimationDuration, SkyModel, StarTrailMode } from "../../common/model/SkyModel.js";
+import { AnimationDuration } from "../../common/model/AnimationDuration.js";
+import type { SkyModel } from "../../common/model/SkyModel.js";
 import {
   BIG_DIPPER,
   BIG_DIPPER_EDGES,
@@ -40,6 +42,7 @@ import {
   SUMMER_TRIANGLE,
   SUMMER_TRIANGLE_EDGES,
 } from "../../common/model/StarPatterns.js";
+import { StarTrailMode } from "../../common/model/StarTrailMode.js";
 import {
   FLAT_PLAY_PAUSE_STEP_BUTTON_OPTIONS,
   FLAT_RECTANGULAR_BUTTON_OPTIONS,
@@ -101,9 +104,11 @@ import {
 import type { ExplorerModel } from "../model/ExplorerModel.js";
 import { ExplorerScreenSummaryContent } from "./ExplorerScreenSummaryContent.js";
 
-type ExplorerScreenViewOptions = ScreenViewOptions & {
+type ExplorerScreenViewSelfOptions = {
   earthMapResolutionProperty: TReadOnlyProperty<EarthMapResolution>;
 };
+
+export type ExplorerScreenViewOptions = ExplorerScreenViewSelfOptions & ScreenViewOptions;
 
 const SPHERE_RADIUS = 118;
 
@@ -120,12 +125,15 @@ export class ExplorerScreenView extends ScreenView {
    */
   private readonly localSiderealTimeProperty: TReadOnlyProperty<number>;
 
-  public constructor(model: ExplorerModel, options: ExplorerScreenViewOptions) {
-    const { earthMapResolutionProperty, ...screenViewOptions } = options;
-    super({
-      screenSummaryContent: new ExplorerScreenSummaryContent(model),
-      ...screenViewOptions,
-    });
+  public constructor(model: ExplorerModel, providedOptions: ExplorerScreenViewOptions) {
+    const options = optionize<ExplorerScreenViewOptions, ExplorerScreenViewSelfOptions, ScreenViewOptions>()(
+      {
+        screenSummaryContent: new ExplorerScreenSummaryContent(model),
+      },
+      providedOptions,
+    );
+    const { earthMapResolutionProperty } = options;
+    super(options);
 
     const sky = model.sky;
     this.sky = sky;
@@ -223,9 +231,12 @@ export class ExplorerScreenView extends ScreenView {
       azimuth: Math.PI / 2,
     });
 
-    const trailsVisibleProperty = new DerivedProperty([sky.starTrailModeProperty], (mode) => mode !== "none");
+    const trailsVisibleProperty = new DerivedProperty(
+      [sky.starTrailModeProperty],
+      (mode) => mode !== StarTrailMode.NONE,
+    );
     const trailMaxLengthProperty = new DerivedProperty([sky.starTrailModeProperty], (mode) =>
-      mode === "short" ? SHORT_TRAIL_HOURS : LONG_TRAIL_HOURS,
+      mode === StarTrailMode.SHORT ? SHORT_TRAIL_HOURS : LONG_TRAIL_HOURS,
     );
 
     const horTrails = new SkyTrailsNode(sky, this.horProjection, {
@@ -400,12 +411,12 @@ export class ExplorerScreenView extends ScreenView {
       duration: AnimationDuration;
       labelProperty: typeof controls.animationTimeContinuousStringProperty;
     }[] = [
-      { duration: "continuous", labelProperty: controls.animationTimeContinuousStringProperty },
-      { duration: "1hour", labelProperty: controls.animationTime1HourStringProperty },
-      { duration: "3hours", labelProperty: controls.animationTime3HoursStringProperty },
-      { duration: "6hours", labelProperty: controls.animationTime6HoursStringProperty },
-      { duration: "12hours", labelProperty: controls.animationTime12HoursStringProperty },
-      { duration: "24hours", labelProperty: controls.animationTime24HoursStringProperty },
+      { duration: AnimationDuration.CONTINUOUS, labelProperty: controls.animationTimeContinuousStringProperty },
+      { duration: AnimationDuration.ONE_HOUR, labelProperty: controls.animationTime1HourStringProperty },
+      { duration: AnimationDuration.THREE_HOURS, labelProperty: controls.animationTime3HoursStringProperty },
+      { duration: AnimationDuration.SIX_HOURS, labelProperty: controls.animationTime6HoursStringProperty },
+      { duration: AnimationDuration.TWELVE_HOURS, labelProperty: controls.animationTime12HoursStringProperty },
+      { duration: AnimationDuration.TWENTY_FOUR_HOURS, labelProperty: controls.animationTime24HoursStringProperty },
     ];
     const durationCombo = new ComboBox<AnimationDuration>(
       sky.animationDurationProperty,
@@ -562,17 +573,17 @@ export class ExplorerScreenView extends ScreenView {
       sky.starTrailModeProperty,
       [
         {
-          value: "none",
+          value: StarTrailMode.NONE,
           createNode: () => radioText(controls.noStarTrailsStringProperty),
           options: { accessibleName: controls.noStarTrailsStringProperty },
         },
         {
-          value: "short",
+          value: StarTrailMode.SHORT,
           createNode: () => radioText(controls.shortStarTrailsStringProperty),
           options: { accessibleName: controls.shortStarTrailsStringProperty },
         },
         {
-          value: "long",
+          value: StarTrailMode.LONG,
           createNode: () => radioText(controls.longStarTrailsStringProperty),
           options: { accessibleName: controls.longStarTrailsStringProperty },
         },

@@ -16,6 +16,7 @@ import {
   type TReadOnlyProperty,
 } from "scenerystack/axon";
 import { clamp, Dimension2, Range, toFixed, Vector2 } from "scenerystack/dot";
+import { optionize } from "scenerystack/phet-core";
 import { HBox, Rectangle, Text, VBox } from "scenerystack/scenery";
 import { NumberControl, PhetFont, ResetAllButton, TimeControlNode } from "scenerystack/scenery-phet";
 import type { ScreenViewOptions } from "scenerystack/sim";
@@ -69,9 +70,11 @@ import {
 import { type CelestialSphereModel, GUIDED_PROMPT_COUNT } from "../model/CelestialSphereModel.js";
 import { CelestialSphereScreenSummaryContent } from "./CelestialSphereScreenSummaryContent.js";
 
-type CelestialSphereScreenViewOptions = ScreenViewOptions & {
+type CelestialSphereScreenViewSelfOptions = {
   earthMapResolutionProperty: TReadOnlyProperty<EarthMapResolution>;
 };
+
+export type CelestialSphereScreenViewOptions = CelestialSphereScreenViewSelfOptions & ScreenViewOptions;
 
 const MORPH_DURATION = 1.2; // seconds
 const RA_RANGE = new Range(0, HOURS_PER_DAY);
@@ -103,12 +106,19 @@ const layoutCelestialSphereProjection = (
 export class CelestialSphereScreenView extends ScreenView {
   private readonly projection: SkyProjection;
 
-  public constructor(model: CelestialSphereModel, options: CelestialSphereScreenViewOptions) {
-    const { earthMapResolutionProperty, ...screenViewOptions } = options;
-    super({
-      screenSummaryContent: new CelestialSphereScreenSummaryContent(model),
-      ...screenViewOptions,
-    });
+  public constructor(model: CelestialSphereModel, providedOptions: CelestialSphereScreenViewOptions) {
+    const options = optionize<
+      CelestialSphereScreenViewOptions,
+      CelestialSphereScreenViewSelfOptions,
+      ScreenViewOptions
+    >()(
+      {
+        screenSummaryContent: new CelestialSphereScreenSummaryContent(model),
+      },
+      providedOptions,
+    );
+    const { earthMapResolutionProperty } = options;
+    super(options);
 
     const sky = model.sky;
     const controls = StringManager.getInstance().getControls();
