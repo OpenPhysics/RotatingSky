@@ -218,7 +218,6 @@ export const addFrontHemispherePolyline = (
     } else if (previousFront && !front) {
       if (!penDown) {
         shape.moveToPoint(mapPoint(previous));
-        penDown = true;
       }
       shape.lineToPoint(mapPoint(clipAtHorizon(previous, point, previousDepth, depth)));
       penDown = false;
