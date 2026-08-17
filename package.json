@@ -34,13 +34,13 @@
     "watch": "tsc --watch",
     "test": "vitest run",
     "test:watch": "vitest",
-    "icons": "tsx scripts/generate-icons.ts",
-    "earth-shore": "tsx scripts/generate-earth-shore-data.ts",
-    "decompile": "tsx scripts/decompile-flash.ts",
-    "clean": "rm -rf dist",
-    "prepare": "git rev-parse --is-inside-work-tree >/dev/null 2>&1 && git config core.hooksPath .githooks || true",
     "test:fuzz": "playwright test --project=chromium",
-    "test:fuzz:quick": "FUZZ_DURATION=10 playwright test --project=chromium"
+    "test:fuzz:quick": "FUZZ_DURATION=10 playwright test --project=chromium",
+    "icons": "tsx scripts/generate-icons.ts",
+    "decompile": "tsx scripts/decompile-flash.ts",
+    "earth-shore": "tsx scripts/generate-earth-shore-data.ts",
+    "clean": "rm -rf dist",
+    "prepare": "git rev-parse --is-inside-work-tree >/dev/null 2>&1 && git config core.hooksPath .githooks || true"
   },
   "dependencies": {
     "scenerystack": "^3.0.0"
