@@ -15,6 +15,7 @@ import {
   TwoColumnKeyboardHelpContent,
 } from "scenerystack/scenery-phet";
 import RotatingSkyHotkeyData from "../../common/RotatingSkyHotkeyData.js";
+import { advanceSiderealTimeHelpRow } from "../../common/view/advanceSiderealTimeHelpRow.js";
 import { StringManager } from "../../i18n/StringManager.js";
 
 export class CelestialSphereKeyboardHelpContent extends TwoColumnKeyboardHelpContent {
@@ -30,10 +31,7 @@ export class CelestialSphereKeyboardHelpContent extends TwoColumnKeyboardHelpCon
         labelStringProperty: kb.rotateAboutZenithStringProperty,
         pdomLabelStringProperty: kb.rotateAboutZenithDescriptionStringProperty,
       }),
-      KeyboardHelpSectionRow.fromHotkeyData(RotatingSkyHotkeyData.ADVANCE_SIDEREAL_TIME, {
-        labelStringProperty: kb.advanceSiderealTimeStringProperty,
-        pdomLabelStringProperty: kb.advanceSiderealTimeDescriptionStringProperty,
-      }),
+      advanceSiderealTimeHelpRow(kb.advanceSiderealTimeStringProperty, kb.advanceSiderealTimeDescriptionStringProperty),
       KeyboardHelpSectionRow.fromHotkeyData(RotatingSkyHotkeyData.MOVE_GUIDE_STAR, {
         labelStringProperty: kb.moveGuideStarStringProperty,
         pdomLabelStringProperty: kb.moveGuideStarDescriptionStringProperty,

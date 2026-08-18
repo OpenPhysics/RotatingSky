@@ -14,6 +14,7 @@ import {
   TwoColumnKeyboardHelpContent,
 } from "scenerystack/scenery-phet";
 import RotatingSkyHotkeyData from "../../common/RotatingSkyHotkeyData.js";
+import { advanceSiderealTimeHelpRow } from "../../common/view/advanceSiderealTimeHelpRow.js";
 import { StringManager } from "../../i18n/StringManager.js";
 
 export class HorizonSystemKeyboardHelpContent extends TwoColumnKeyboardHelpContent {
@@ -29,10 +30,7 @@ export class HorizonSystemKeyboardHelpContent extends TwoColumnKeyboardHelpConte
         labelStringProperty: kb.rotateAboutZenithStringProperty,
         pdomLabelStringProperty: kb.rotateAboutZenithDescriptionStringProperty,
       }),
-      KeyboardHelpSectionRow.fromHotkeyData(RotatingSkyHotkeyData.ADVANCE_SIDEREAL_TIME, {
-        labelStringProperty: kb.advanceSiderealTimeStringProperty,
-        pdomLabelStringProperty: kb.advanceSiderealTimeDescriptionStringProperty,
-      }),
+      advanceSiderealTimeHelpRow(kb.advanceSiderealTimeStringProperty, kb.advanceSiderealTimeDescriptionStringProperty),
       KeyboardHelpSectionRow.fromHotkeyData(RotatingSkyHotkeyData.MOVE_STAR, {
         labelStringProperty: kb.moveStarStringProperty,
         pdomLabelStringProperty: kb.moveStarDescriptionStringProperty,
